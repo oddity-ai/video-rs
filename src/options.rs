@@ -29,8 +29,10 @@ impl Options<'_> {
   pub fn new_with_rtsp_transport_tcp_and_sane_timeouts() -> Self {
     let mut opts = AvDictionary::new();
     opts.set("rtsp_transport", "tcp");
-    opts.set("rw_timeout", "4000000");
-    opts.set("stimeout", "4000000");
+    // These can't be too low because ffmpeg takes its sweet time when
+    // connecting to RTSP sources sometimes.
+    opts.set("rw_timeout", "16000000");
+    opts.set("stimeout", "16000000");
 
     Self(opts)
   }

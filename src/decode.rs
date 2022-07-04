@@ -153,7 +153,9 @@ impl Decoder {
   #[cfg(feature = "ndarray")]
   pub fn decode(&mut self) -> Result<(Time, Frame)> {
     let frame = &mut self.decode_raw()?;
-    let timestamp = Time::new(frame.timestamp(), self.decoder_time_base);
+    // We use the packet DTS here (which is `frame->pkt_dts`) because that is
+    // what the encoder will use when encoding for the `PTS` field.
+    let timestamp = Time::new(Some(frame.packet().dts), self.decoder_time_base);
     let frame = convert_frame_to_ndarray_rgb24(frame)
       .map_err(Error::BackendError)?;
 
