@@ -24,21 +24,25 @@ video-rs = "0.1.0"
 ```
 
 Use the `ndarray` feature to be able to use raw frames with the
-[`ndarray`](https://github.com/rust-ndarray/ndarray) crate.
+[`ndarray`](https://github.com/rust-ndarray/ndarray) crate:
+
+```toml
+video-rs = { version = "0.1.0", features = ["ndarray"] }
+```
 
 ## 📖 Examples
 
 Decode a video and print the RGB value for the top left pixel:
 
 ```rust
-use oddity_video::{
+use video_rs::{
   self,
   Locator,
   Decoder,
 };
 
 fn main() {
-  oddity_video::init();
+  video_rs::init();
   
   let source = Locator::Url("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4".parse().unwrap());
   let mut decoder = Decoder::new(&source)
@@ -70,7 +74,7 @@ use std::time::Duration;
 
 use ndarray::Array3;
 
-use oddity_video::{
+use video_rs::{
   Locator,
   Encoder,
   EncoderSettings,
@@ -78,7 +82,7 @@ use oddity_video::{
 };
 
 fn main() {
-  oddity_video::init();
+  video_rs::init();
 
   let destination: Locator = PathBuf::from("rainbow.mp4").into();
   let settings = EncoderSettings::for_h264_yuv420p(1280, 720, false);

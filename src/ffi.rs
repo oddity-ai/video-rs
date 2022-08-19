@@ -544,17 +544,17 @@ unsafe extern "C" fn log_callback(
           match level_no {
             // These are all error states.
             AV_LOG_PANIC | AV_LOG_FATAL | AV_LOG_ERROR
-              => tracing::error!(target: "oddity_video", "{}", line),
+              => tracing::error!(target: "video", "{}", line),
             AV_LOG_WARNING
-              => tracing::warn!(target: "oddity_video", "{}", line),
+              => tracing::warn!(target: "video", "{}", line),
             AV_LOG_INFO
-              => tracing::info!(target: "oddity_video", "{}", line),
+              => tracing::info!(target: "video", "{}", line),
             // There is no "verbose" in `log`, so we just put it
             // in the "debug" category.
             AV_LOG_VERBOSE | AV_LOG_DEBUG
-              => tracing::debug!(target: "oddity_video", "{}", line),
+              => tracing::debug!(target: "video", "{}", line),
             AV_LOG_TRACE
-              => tracing::trace!(target: "oddity_video", "{}", line),
+              => tracing::trace!(target: "video", "{}", line),
             _ => { return; }
           };
         }
