@@ -1,15 +1,6 @@
-<p>
-  <p align="center">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://oddity.ai/img/logo_light.png">
-      <source media="(prefers-color-scheme: light)" srcset="https://oddity.ai/img/logo.png">
-      <img alt="Oddity.ai" src="https://oddity.ai/img/logo.png" height="30
-px">
-    </picture>
-    <code style="font-size: 40px">video-rs</code>
-  </p>
-  <p align="center">High-level video toolkit based on ffmpeg.</p>
-</p>
+<h1 align="center">
+  <code>video-rs</code>
+</h1>
 
 ## 🎬 Introduction
 
