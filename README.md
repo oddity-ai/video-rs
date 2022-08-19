@@ -1,11 +1,13 @@
-<p align="center">
+<p float="left" align="middle">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://oddity.ai/img/logo_full_light.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://oddity.ai/img/logo_full.png">
-    <img alt="Oddity.ai" src="https://oddity.ai/img/logo_full.png" height="64px">
+    <source media="(prefers-color-scheme: dark)" srcset="https://oddity.ai/img/logo_light.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://oddity.ai/img/logo.png">
+    <img alt="Oddity.ai" src="https://oddity.ai/img/logo.png" height="32px">
   </picture>
-  <br/>
-  <h1 align="center">Video Toolkit</h1>
+  <h1 align="center">
+
+`video-rs`
+  </h1>
   <p align="center">High-level video toolkit based on ffmpeg.</p>
 </p>
 
