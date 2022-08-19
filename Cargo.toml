@@ -1,6 +1,8 @@
 [package]
 name = "video-rs"
 description = "High-level video toolkit based on ffmpeg."
+keywords = ["video", "ffmpeg", "encoding", "decoding", "muxing"]
+categories = ["multimedia", "multimedia::video"]
 version = "0.1.0"
 authors = ["Oddity.ai Developers <hello@oddity.ai>"]
 license = "MIT OR Apache-2.0"
