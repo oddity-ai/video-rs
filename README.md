@@ -1,6 +1,7 @@
 <h1 align="center">
   <code>video-rs</code>
 </h1>
+<p align="center">High-level video toolkit based on ffmpeg.</p>
 
 ## 🎬 Introduction
 
