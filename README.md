@@ -19,7 +19,7 @@ the API have not been flushed out yet. Use with caution.
 
 Add the following to your dependencies in `Cargo.toml`:
 
-```yaml
+```toml
 video-rs = "0.1.0"
 ```
 
