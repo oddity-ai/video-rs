@@ -11,7 +11,7 @@
 
 ## 🎬 Introduction
 
-`oddity-video` is a general-purpose video library for Rust that uses the
+`video-rs` is a general-purpose video library for Rust that uses the
 `libav`-family libraries from `ffmpeg`. It aims to provide a stable and Rusty
 interface to many common video tasks such as reading, writing, muxing, encoding
 and decoding.
@@ -26,7 +26,7 @@ the API have not been flushed out yet. Use with caution.
 Add the following to your dependencies in `Cargo.toml`:
 
 ```yaml
-oddity-video = { git = "ssh://git@github.com/oddity-ai/oddity-video.git" }
+video-rs = "0.1.0"
 ```
 
 Use the `ndarray` feature to be able to use raw frames with the
