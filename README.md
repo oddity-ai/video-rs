@@ -5,8 +5,7 @@
       <source media="(prefers-color-scheme: light)" srcset="https://oddity.ai/img/logo.png">
       <img alt="Oddity.ai" src="https://oddity.ai/img/logo.png" height="32px">
     </picture>
-
-`video-rs`
+    <code>video-rs</code>
   </h1>
   <p align="center">High-level video toolkit based on ffmpeg.</p>
 </p>
