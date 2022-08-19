@@ -20,14 +20,14 @@ the API have not been flushed out yet. Use with caution.
 Add the following to your dependencies in `Cargo.toml`:
 
 ```toml
-video-rs = "0.1.0"
+video-rs = "0.1.1"
 ```
 
 Use the `ndarray` feature to be able to use raw frames with the
 [`ndarray`](https://github.com/rust-ndarray/ndarray) crate:
 
 ```toml
-video-rs = { version = "0.1.0", features = ["ndarray"] }
+video-rs = { version = "0.1.1", features = ["ndarray"] }
 ```
 
 ## 📖 Examples
