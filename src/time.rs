@@ -143,9 +143,9 @@ impl Aligned {
     self.apply(|lhs, rhs| lhs + rhs)
   }
 
-  /// Substract the right-hand side timestamp from the left-hand
+  /// Subtract the right-hand side timestamp from the left-hand
   /// side timestamp.
-  pub fn substract(self) -> Time {
+  pub fn subtract(self) -> Time {
     self.apply(|lhs, rhs| lhs - rhs)
   }
 
