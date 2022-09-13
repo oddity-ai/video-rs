@@ -6,9 +6,12 @@ use ffmpeg::{
     context::Context as AvScaler,
     flag::Flags as AvScalerFlags,
   },
+  util::{
+    format::pixel::Pixel as AvPixel,
+    error::EAGAIN,
+  },
   Error as AvError,
   Rational as AvRational,
-  util::error::EAGAIN,
 };
 
 use super::{
@@ -244,6 +247,11 @@ impl Decoder {
           (w, h)),
       })
       .unwrap_or((decoder.width(), decoder.height()));
+
+    if decoder.format() == AvPixel::None ||
+       decoder.width() == 0 || decoder.height() == 0 {
+      return Err(Error::MissingCodecParameters);
+    }
 
     let scaler = AvScaler::get(
       decoder.format(),

@@ -13,6 +13,7 @@ pub enum Error {
   WriteRetryLimitReached,
   InvalidFrameFormat,
   InvalidExtraData,
+  MissingCodecParameters,
   UnsupporedCodecParameterSets,
   BackendError(FfmpegError),
 }
@@ -25,6 +26,7 @@ impl error::Error for Error {
       Error::WriteRetryLimitReached => None,
       Error::InvalidFrameFormat => None,
       Error::InvalidExtraData => None,
+      Error::MissingCodecParameters => None,
       Error::UnsupporedCodecParameterSets => None,
       Error::BackendError(ref internal) =>
         Some(internal),
@@ -45,6 +47,8 @@ impl fmt::Display for Error {
         write!(f, "provided frame does not match expected dimensions and/or pixel format"),
       Error::InvalidExtraData =>
         write!(f, "codec parameters extradata is corrupted"),
+      Error::MissingCodecParameters =>
+        write!(f, "codec parameters missing"),
       Error::UnsupporedCodecParameterSets =>
         write!(f, "extracting parameter sets for this codec is not suppored"),
       Error::BackendError(ref internal) =>
