@@ -17,7 +17,11 @@ the API have not been flushed out yet. Use with caution.
 
 ## 📦 Setup
 
-Add the following to your dependencies in `Cargo.toml`:
+First, install the `ffmpeg` libraries. The `ffmpeg-next` project has
+[excellent instructions](https://github.com/zmwangx/rust-ffmpeg/wiki/Notes-on-building#dependencies)
+on this (`video-rs` depends on the `ffmpeg-next` crate).
+
+Then, add the following to your dependencies in `Cargo.toml`:
 
 ```toml
 video-rs = "0.1"
