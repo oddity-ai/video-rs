@@ -350,7 +350,7 @@ pub enum Resize {
   /// dimensions that fit these constraints.
   /// 
   /// Note that this resizing method is especially useful since
-  /// some codecs only accept frames with dimensions that are
+  /// some encoders only accept frames with dimensions that are
   /// divisible by 2.
   FitEven(u32, u32),
 }
