@@ -15,6 +15,7 @@ pub enum Error {
   InvalidExtraData,
   MissingCodecParameters,
   UnsupporedCodecParameterSets,
+  InvalidResizeParameters,
   BackendError(FfmpegError),
 }
 
@@ -28,6 +29,7 @@ impl error::Error for Error {
       Error::InvalidExtraData => None,
       Error::MissingCodecParameters => None,
       Error::UnsupporedCodecParameterSets => None,
+      Error::InvalidResizeParameters => None,
       Error::BackendError(ref internal) =>
         Some(internal),
     }
@@ -51,6 +53,8 @@ impl fmt::Display for Error {
         write!(f, "codec parameters missing"),
       Error::UnsupporedCodecParameterSets =>
         write!(f, "extracting parameter sets for this codec is not suppored"),
+      Error::InvalidResizeParameters =>
+        write!(f, "cannot resize frame into provided dimensions"),
       Error::BackendError(ref internal) =>
         internal.fmt(f),
     }
