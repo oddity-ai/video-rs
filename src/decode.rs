@@ -51,6 +51,7 @@ pub struct Decoder {
   decoder_time_base: AvRational,
   scaler: AvScaler,
   size: (u32, u32),
+  size_out: (u32, u32),
   frame_rate: f32,
 }
 
@@ -208,6 +209,12 @@ impl Decoder {
     self.size
   }
 
+  /// Get the decoders output size after resizing is applied (resolution
+  /// dimensions): width and height.
+  pub fn size_out(&self) -> (u32, u32) {
+    self.size_out
+  }
+
   /// Get the decoders input frame rate as floating-point value.
   pub fn frame_rate(&self) -> f32 {
     self.frame_rate
@@ -275,6 +282,7 @@ impl Decoder {
       AvScalerFlags::AREA)?;
 
     let size = (decoder.width(), decoder.height());
+    let size_out = (resize_width, resize_height);
 
     Ok(Self {
       reader,
@@ -283,6 +291,7 @@ impl Decoder {
       decoder_time_base,
       scaler,
       size,
+      size_out,
       frame_rate,
     })
   }
