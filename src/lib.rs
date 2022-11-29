@@ -8,6 +8,7 @@ mod stream;
 mod frame;
 mod packet;
 mod time;
+mod resize;
 mod extradata;
 mod ffi;
 mod init;
@@ -19,10 +20,7 @@ pub use io::{
   Writer,
   Buf,
 };
-pub use decode::{
-  Decoder,
-  Resize,
-};
+pub use decode::Decoder;
 pub use encode::{
   Encoder,
   Settings as EncoderSettings,
@@ -47,6 +45,7 @@ pub use time::{
   Time,
   Aligned,
 };
+pub use resize::Resize;
 pub use packet::Packet;
 pub use extradata::{
   Sps,
