@@ -1,7 +1,10 @@
 extern crate ffmpeg_next as ffmpeg;
 
 use ffmpeg::{
-  codec::decoder::Video as AvDecoder,
+  codec::{
+    Context as AvContext,
+    decoder::Video as AvDecoder,
+  },
   software::scaling::{
     context::Context as AvScaler,
     flag::Flags as AvScalerFlags,
@@ -19,7 +22,10 @@ use super::{
   io::Reader,
   options::Options,
   frame::FRAME_PIXEL_FORMAT,
-  ffi::copy_frame_props,
+  ffi::{
+    set_decoder_context_time_base,
+    copy_frame_props,
+  },
   Resize,
   Locator,
   Error,
@@ -241,8 +247,10 @@ impl Decoder {
     let frame_rate = reader_stream.rate();
     let frame_rate = frame_rate.numerator() as f32 / frame_rate.denominator() as f32;
     
-    let codec = reader_stream.codec();
-    let decoder = codec
+    let mut decoder = AvContext::new();
+    set_decoder_context_time_base(&mut decoder, reader_stream.time_base());
+    decoder.set_parameters(reader_stream.parameters())?;
+    let decoder = decoder
       .decoder()
       .video()?;
     let decoder_time_base = decoder.time_base();

@@ -16,6 +16,7 @@ use ffmpeg::{
   Rational,
 };
 use ffmpeg::format::context::Output;
+use ffmpeg::codec::context::Context;
 use ffmpeg::encoder::video::Video;
 use ffmpeg::util::frame::video::Video as Frame;
 #[cfg(feature = "ndarray")]
@@ -216,6 +217,22 @@ pub fn flush_output(output: &mut Output) -> Result<(), Error> {
       1 => Ok(()),
       e => Err(Error::from(e))
     }
+  }
+}
+
+/// Set the `time_base` field of a decoder. (Not natively supported in
+/// the public API.)
+/// 
+/// # Arguments
+/// 
+/// * `decoder_context` - Decoder context.
+/// * `time_base` - Time base to assign.
+pub fn set_decoder_context_time_base(
+  decoder_context: &mut Context,
+  time_base: Rational,
+) {
+  unsafe {
+    (*decoder_context.as_mut_ptr()).time_base = time_base.into();
   }
 }
 
