@@ -3,7 +3,7 @@ name = "video-rs"
 description = "High-level video toolkit based on ffmpeg."
 keywords = ["video", "ffmpeg", "encoding", "decoding", "muxing"]
 categories = ["multimedia", "multimedia::video"]
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Oddity.ai Developers <hello@oddity.ai>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
@@ -12,6 +12,6 @@ readme = "README.md"
 
 [dependencies]
 tracing = "0.1"
-ffmpeg-next = "4.4"
+ffmpeg-next = "5.1"
 url = "2"
 ndarray = { version = "0.15", optional = true }
