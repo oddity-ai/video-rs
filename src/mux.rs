@@ -2,6 +2,7 @@ extern crate ffmpeg_next as ffmpeg;
 
 use std::collections::HashMap;
 
+use ffmpeg::codec::Context;
 use ffmpeg::{
   codec::Id as AvCodecId,
   Rational as AvRational,
@@ -313,16 +314,18 @@ impl<W: Write> Muxer<W> {
       .output()
       .streams()
       .map(|stream| {
-        if stream.codec().id() == AvCodecId::H264 {
-          extract_parameter_sets_h264(
-            extradata(
-              &self.writer.output(),
-              stream.index()
-            )?
-          )
-        } else {
-          Err(Error::UnsupporedCodecParameterSets)
-        }
+				let context = Context::from_parameters(stream.parameters())?;
+				if let Some(codec) = context.codec() {
+					if codec.id() == AvCodecId::H264 {
+						return extract_parameter_sets_h264(
+							extradata(
+								&self.writer.output(),
+								stream.index()
+							)?
+						);
+					}
+				}
+				Err(Error::UnsupporedCodecParameterSets)
       })
       .collect::<Vec<_>>()
   }

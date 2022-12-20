@@ -1,5 +1,6 @@
 extern crate ffmpeg_next as ffmpeg;
 
+use ffmpeg::codec::Context;
 use ffmpeg::{
   format::flag::Flags as AvFormatFlags,
   codec::{
@@ -359,10 +360,10 @@ impl Encoder {
   /// 
   /// Raw ffmpeg encoder belonging to given stream.
   fn encoder(writer_stream: &StreamMut) -> Result<AvEncoder> {
-    writer_stream
-      .codec()
-      .encoder()
-      .video()
+		Context::from_parameters(writer_stream.parameters())
+			.unwrap()
+			.encoder()
+			.video()
       .map_err(Error::BackendError)
   }
 
