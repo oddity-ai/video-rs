@@ -46,7 +46,7 @@ use video_rs::{
 };
 
 fn main() {
-  video_rs::init();
+  video_rs::init().unwrap();
   
   let source = Locator::Url("http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4".parse().unwrap());
   let mut decoder = Decoder::new(&source)
@@ -86,7 +86,7 @@ use video_rs::{
 };
 
 fn main() {
-  video_rs::init();
+  video_rs::init().unwrap();
 
   let destination: Locator = PathBuf::from("rainbow.mp4").into();
   let settings = EncoderSettings::for_h264_yuv420p(1280, 720, false);
