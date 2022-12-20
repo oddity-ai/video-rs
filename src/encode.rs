@@ -5,7 +5,7 @@ use ffmpeg::{
   codec::{
     Id as AvCodecId,
     codec::Codec as AvCodec,
-		Context,
+    Context,
     packet::Packet as AvPacket,
     encoder::video::Video as AvEncoder,
     flag::Flags as AvCodecFlags,
@@ -360,10 +360,9 @@ impl Encoder {
   /// 
   /// Raw ffmpeg encoder belonging to given stream.
   fn encoder(writer_stream: &StreamMut) -> Result<AvEncoder> {
-		Context::from_parameters(writer_stream.parameters())
-			.unwrap()
-			.encoder()
-			.video()
+    Context::from_parameters(writer_stream.parameters())?
+      .encoder()
+      .video()
       .map_err(Error::BackendError)
   }
 

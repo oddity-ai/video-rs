@@ -315,17 +315,17 @@ impl<W: Write> Muxer<W> {
       .streams()
       .map(|stream| {
 				let context = Context::from_parameters(stream.parameters())?;
-				if let Some(codec) = context.codec() {
-					if codec.id() == AvCodecId::H264 {
-						return extract_parameter_sets_h264(
-							extradata(
+					if let Some(codec) = context.codec() {
+						if codec.id() == AvCodecId::H264 {
+							return extract_parameter_sets_h264(
+								extradata(
 								&self.writer.output(),
 								stream.index()
 							)?
 						);
 					}
 				}
-				
+
 				Err(Error::UnsupporedCodecParameterSets)
       })
       .collect::<Vec<_>>()
