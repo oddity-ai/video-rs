@@ -12,6 +12,6 @@ readme = "README.md"
 
 [dependencies]
 tracing = "0.1"
-ffmpeg-next = "5.1"
+ffmpeg-next = { version = "5.1", features = [ "format" ] }
 url = "2"
 ndarray = { version = "0.15", optional = true }
