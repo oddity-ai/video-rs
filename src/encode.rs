@@ -1,11 +1,11 @@
 extern crate ffmpeg_next as ffmpeg;
 
-use ffmpeg::codec::Context;
 use ffmpeg::{
   format::flag::Flags as AvFormatFlags,
   codec::{
     Id as AvCodecId,
     codec::Codec as AvCodec,
+		Context,
     packet::Packet as AvPacket,
     encoder::video::Video as AvEncoder,
     flag::Flags as AvCodecFlags,

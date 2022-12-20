@@ -2,8 +2,8 @@ extern crate ffmpeg_next as ffmpeg;
 
 use std::collections::HashMap;
 
-use ffmpeg::codec::Context;
 use ffmpeg::{
+	codec::Context,
   codec::Id as AvCodecId,
   Rational as AvRational,
   Error as AvError,
@@ -325,6 +325,7 @@ impl<W: Write> Muxer<W> {
 						);
 					}
 				}
+				
 				Err(Error::UnsupporedCodecParameterSets)
       })
       .collect::<Vec<_>>()
