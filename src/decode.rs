@@ -75,6 +75,7 @@ impl Decoder {
     Self::from_reader(
       Reader::new(source)?,
       None,
+      None,
     )
   }
 
@@ -91,6 +92,21 @@ impl Decoder {
     Self::from_reader(
       Reader::new_with_options(source, options)?,
       None,
+      None
+    )
+  }
+
+  // TODO: Rename to `new_with_options_on_device` and provide better API
+  // i.e. an enum like `Device::Cuda(usize)`.
+  pub fn new_with_options_on_cuda_device(
+    source: &Locator,
+    options: &Options,
+    device: usize,
+  ) -> Result<Self> {
+    Self::from_reader(
+      Reader::new_with_options(source, options)?,
+      None,
+      Some(device),
     )
   }
 
@@ -120,9 +136,24 @@ impl Decoder {
     Self::from_reader(
       Reader::new_with_options(source, options)?,
       Some(resize),
+      None,
     )
   }
 
+  // TODO: Rename to `new_with_options_and_resize_on_device` and provide
+  // better API i.e. an enum like `Device::Cuda(usize)`.
+  pub fn new_with_options_and_resize_on_cuda_device(
+    source: &Locator,
+    options: &Options,
+    resize: Resize,
+    device: usize,
+  ) -> Result<Self> {
+    Self::from_reader(
+      Reader::new_with_options(source, options)?,
+      Some(resize),
+      Some(device),
+    )
+  }
   /// Decode frames through iterator interface. This is similar to `decode`
   /// but it returns frames through an infinite iterator.
   /// 
@@ -199,7 +230,29 @@ impl Decoder {
       frame = self.decoder_receive_frame()?;
     }
 
-    let frame = frame.unwrap();
+    let mut frame = frame.unwrap();
+
+    // TODO: Cleanup
+    // TODO: Refactor in `ffi` module.
+    if frame.format() == AvPixel::CUDA {
+      let mut frame_sw = RawFrame::empty();
+      unsafe {
+        /*
+            if ((ret = av_hwframe_transfer_data(sw_frame, frame, 0)) < 0) {
+                fprintf(stderr, "Error transferring the data to system memory\n");
+                goto fail;
+            }
+            tmp_frame = sw_frame;
+        */
+        let ret = ffmpeg::ffi::av_hwframe_transfer_data(frame_sw.as_mut_ptr(), frame.as_ptr(), 0);
+        if ret < 0 {
+          return Err(Error::BackendError(ffmpeg::Error::from(ret)));
+        }
+      }
+      // TODO: Check that this properly deallocates current frame and replaces it with `frame_sw`.
+      frame = frame_sw; 
+    }
+
     let mut frame_scaled = RawFrame::empty();
     self
       .scaler
@@ -237,6 +290,7 @@ impl Decoder {
   fn from_reader(
     reader: Reader,
     resize: Option<Resize>,
+    device: Option<usize>,
   ) -> Result<Self> {
     let reader_stream_index = reader.best_video_stream_index()?;
     let reader_stream = reader
@@ -250,6 +304,29 @@ impl Decoder {
     let mut decoder = AvContext::new();
     set_decoder_context_time_base(&mut decoder, reader_stream.time_base());
     decoder.set_parameters(reader_stream.parameters())?;
+
+    // TODO: Cleanup
+    // TODO: Refactor in `ffi` module.
+    unsafe {
+      let mut av_device_ctx: *mut ffmpeg::ffi::AVBufferRef = std::ptr::null_mut();
+      let device_str = device.map(|device_num| device_num.to_string()).unwrap_or_else(|| "0".to_string()); // TODO
+      let device = std::ffi::CString::new(device_str).unwrap();
+      let ret = ffmpeg::ffi::av_hwdevice_ctx_create(
+        &mut av_device_ctx,
+        ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_CUDA,
+        device.as_ptr() as *const std::os::raw::c_char,
+        std::ptr::null_mut(),
+        0,
+      );
+      if ret < 0 {
+        return Err(Error::BackendError(ffmpeg::Error::from(ret)));
+      }
+      (*decoder.as_mut_ptr()).hw_device_ctx = av_device_ctx;
+      (*decoder.as_mut_ptr()).get_format = Some(get_hw_format);
+      // TODO: Assign this as the first provided format by `av_hwframe_transfer_get_formats`.
+      (*decoder.as_mut_ptr()).pix_fmt = ffmpeg::ffi::AVPixelFormat::AV_PIX_FMT_NV12;
+    }
+
     let decoder = decoder
       .decoder()
       .video()?;
@@ -337,4 +414,21 @@ impl Drop for Decoder {
     }
   }
 
+}
+
+// TODO: Documentation
+// TODO: Refactor in `ffi` module
+// TODO: Clean up
+pub unsafe extern fn get_hw_format(
+  _ctx: *mut ffmpeg::ffi::AVCodecContext,
+  pix_fmts: *const ffmpeg::ffi::AVPixelFormat,
+) -> ffmpeg::ffi::AVPixelFormat {
+  let mut pix_fmt = pix_fmts;
+  while !pix_fmt.is_null() {
+    if *pix_fmt == ffmpeg::ffi::AVPixelFormat::AV_PIX_FMT_CUDA {
+      return *pix_fmt;
+    }
+    pix_fmt = pix_fmt.offset(1);
+  }
+  ffmpeg::ffi::AVPixelFormat::AV_PIX_FMT_NONE
 }
