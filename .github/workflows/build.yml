@@ -1,8 +1,11 @@
-name: test
+name: build
+
 on:
   push:
   pull_request:
+
 jobs:
+
   build-linux:
     name: Linux - FFmpeg ${{ matrix.ffmpeg_version }} - build
     runs-on: ubuntu-latest
