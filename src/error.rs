@@ -14,7 +14,7 @@ pub enum Error {
   InvalidFrameFormat,
   InvalidExtraData,
   MissingCodecParameters,
-  UnsupporedCodecParameterSets,
+  UnsupportedCodecParameterSets,
   InvalidResizeParameters,
   BackendError(FfmpegError),
 }
@@ -28,7 +28,7 @@ impl error::Error for Error {
       Error::InvalidFrameFormat => None,
       Error::InvalidExtraData => None,
       Error::MissingCodecParameters => None,
-      Error::UnsupporedCodecParameterSets => None,
+      Error::UnsupportedCodecParameterSets => None,
       Error::InvalidResizeParameters => None,
       Error::BackendError(ref internal) =>
         Some(internal),
@@ -51,7 +51,7 @@ impl fmt::Display for Error {
         write!(f, "codec parameters extradata is corrupted"),
       Error::MissingCodecParameters =>
         write!(f, "codec parameters missing"),
-      Error::UnsupporedCodecParameterSets =>
+      Error::UnsupportedCodecParameterSets =>
         write!(f, "extracting parameter sets for this codec is not suppored"),
       Error::InvalidResizeParameters =>
         write!(f, "cannot resize frame into provided dimensions"),
