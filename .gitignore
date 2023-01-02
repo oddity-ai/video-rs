@@ -11,3 +11,4 @@ Cargo.lock
 **/*.rs.bk
 
 .justfile
+.vscode

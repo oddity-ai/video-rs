@@ -1,0 +1,76 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+
+  build-linux:
+    name: Linux - FFmpeg ${{ matrix.ffmpeg_version }} - build
+    runs-on: ubuntu-latest
+    container: jrottenberg/ffmpeg:${{ matrix.ffmpeg_version }}-ubuntu
+    strategy:
+      matrix:
+        ffmpeg_version: ["3.4", "4.0", "4.1", "4.2", "4.3", "4.4", "5.0", "5.1"]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          apt update
+          apt install -y --no-install-recommends clang curl pkg-config
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Build
+        run: cargo build
+
+  build-macos:
+    name: macOS - FFmpeg latest - build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          brew install ffmpeg pkg-config
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Build
+        run: cargo build
+
+  build-windows:
+    name: Windows - FFmpeg ${{ matrix.ffmpeg_version }} - build
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - ffmpeg_version: latest
+            ffmpeg_download_url: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z
+      fail-fast: false
+    env:
+      FFMPEG_DOWNLOAD_URL: ${{ matrix.ffmpeg_download_url }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          $VCINSTALLDIR = $(& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath)
+          Add-Content $env:GITHUB_ENV "LIBCLANG_PATH=${VCINSTALLDIR}\VC\Tools\LLVM\x64\bin`n"
+          Invoke-WebRequest "${env:FFMPEG_DOWNLOAD_URL}" -OutFile ffmpeg-release-full-shared.7z
+          7z x ffmpeg-release-full-shared.7z
+          mkdir ffmpeg
+          mv ffmpeg-*/* ffmpeg/
+          Add-Content $env:GITHUB_ENV "FFMPEG_DIR=${pwd}\ffmpeg`n"
+          Add-Content $env:GITHUB_PATH "${pwd}\ffmpeg\bin`n"
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Build
+        run: cargo build
