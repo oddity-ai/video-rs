@@ -284,6 +284,9 @@ impl Encoder {
     let _ = encoder
       .open_with(settings.options().to_dict())?;
 
+    // FIXME: Not sure why we need to reinitialize the encoder every
+    // time (or at least it seems like that) but the official examples
+    // do the same thing.
     let encoder = Self::encoder(&writer_stream)?;
     writer_stream.set_parameters(encoder);
 
