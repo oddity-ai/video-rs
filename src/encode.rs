@@ -269,9 +269,7 @@ impl Encoder {
       .add_stream(settings.codec())?;
     let writer_stream_index = writer_stream.index();
 
-    let mut encoder = AvContext::from_parameters(writer_stream.parameters())?
-      .encoder()
-      .video()?;
+    let mut encoder = Self::encoder(&writer_stream)?;
     // Some formats require this flag to be set or the output will
     // not be playable by dumb players.
     if global_header {
@@ -283,19 +281,14 @@ impl Encoder {
     // that we should never get in trouble
     encoder.set_time_base(TIME_BASE);
 
-    let _ = encoder.open_as_with(
-      settings.codec(),
-      settings.options().to_dict(),
-    )?;
+    let _ = encoder
+      .open_with(settings.options().to_dict())?;
 
-    // FIXME: I'm not sure why this even works. It seems like we're
-    // reinitializing everything but this what the official example
-    // code for `rust-ffmpeg` does and it seems to work.
-    let encoder = AvContext::from_parameters(writer_stream.parameters())?
-      .encoder()
-      .video()?;
+    let encoder = Self::encoder(&writer_stream)?;
+    writer_stream.set_parameters(encoder);
+
+    let encoder = Self::encoder(&writer_stream)?;
     let encoder_time_base = get_encoder_time_base(&encoder);
-    writer_stream.set_parameters(&encoder);
 
     let scaler_width = encoder.width();
     let scaler_height = encoder.height();
@@ -306,11 +299,7 @@ impl Encoder {
       encoder.format(),
       scaler_width,
       scaler_height,
-      AvScalerFlags::empty(),
-    )?;
-
-    // TODO
-    let encoder = AvContext::from_parameters(writer_stream.parameters())?.encoder().video()?;
+      AvScalerFlags::empty())?;
 
     Ok(Self {
       writer,
@@ -359,6 +348,22 @@ impl Encoder {
       Err(err)
         => Err(err.into()),
     }
+  }
+
+  /// Helper function to extract encoder from stream.
+  /// 
+  /// # Arguments
+  /// 
+  /// * `writer_stream` - Stream to get encoder of.
+  /// 
+  /// # Returns
+  /// 
+  /// Raw ffmpeg encoder belonging to given stream.
+  fn encoder(writer_stream: &StreamMut) -> Result<AvEncoder> {
+    AvContext::from_parameters(writer_stream.parameters())?
+      .encoder()
+      .video()
+      .map_err(Error::BackendError)
   }
 
   /// Acquire the time base of the output stream.
