@@ -16,6 +16,7 @@ use ffmpeg::{
   Rational,
 };
 use ffmpeg::format::context::Output;
+use ffmpeg::codec::codec::Codec;
 use ffmpeg::codec::context::Context;
 use ffmpeg::encoder::video::Video;
 use ffmpeg::util::frame::video::Video as Frame;
@@ -216,6 +217,22 @@ pub fn flush_output(output: &mut Output) -> Result<(), Error> {
       0 => Ok(()),
       1 => Ok(()),
       e => Err(Error::from(e))
+    }
+  }
+}
+
+/// Initialize a new codec context using a specific codec.
+/// 
+/// # Arguments
+/// 
+/// * `codec` - Codec to initialize with.
+pub fn codec_context_as(codec: &Codec) -> Result<Context, Error> {
+  unsafe {
+    let context_ptr = ffmpeg::ffi::avcodec_alloc_context3(codec.as_ptr());
+    if !context_ptr.is_null() {
+      Ok(Context::wrap(context_ptr, None))
+    } else {
+      Err(Error::Unknown)
     }
   }
 }

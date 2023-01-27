@@ -7,7 +7,8 @@ use ffmpeg::{
     Context as AvContext,
     codec::Codec as AvCodec,
     packet::Packet as AvPacket,
-    encoder::video::Video as AvEncoder,
+    encoder::video::Encoder as AvEncoder,
+    encoder::video::Video as AvVideo,
     flag::Flags as AvCodecFlags,
   },
   software::scaling::{
@@ -20,7 +21,6 @@ use ffmpeg::{
     mathematics::rescale::TIME_BASE,
     error::EAGAIN,
   },
-  StreamMut,
   Rational as AvRational,
   Error as AvError,
 };
@@ -35,7 +35,10 @@ use super::{
   },
   options::Options,
   frame::FRAME_PIXEL_FORMAT,
-  ffi::get_encoder_time_base,
+  ffi::{
+    get_encoder_time_base,
+    codec_context_as,
+  },
 };
 
 #[cfg(feature = "ndarray")]
@@ -269,26 +272,28 @@ impl Encoder {
       .add_stream(settings.codec())?;
     let writer_stream_index = writer_stream.index();
 
-    let mut encoder = Self::encoder(&writer_stream)?;
+    let mut encoder_context = match settings.codec() {
+      Some(codec) => codec_context_as(&codec)?,
+      None => AvContext::new(),
+    };
+
     // Some formats require this flag to be set or the output will
     // not be playable by dumb players.
     if global_header {
-      encoder.set_flags(AvCodecFlags::GLOBAL_HEADER);
+      encoder_context.set_flags(AvCodecFlags::GLOBAL_HEADER);
     }
+    
+    let mut encoder = encoder_context.encoder().video()?;
+    settings.apply_to(&mut encoder);
 
-    let mut encoder = settings.apply_to(encoder);
     // Just use the ffmpeg global time base which is precise enough
-    // that we should never get in trouble
+    // that we should never get in trouble.
     encoder.set_time_base(TIME_BASE);
 
-    let _ = encoder
-      .open_with(settings.options().to_dict())?;
-
-    let encoder = Self::encoder(&writer_stream)?;
-    writer_stream.set_parameters(encoder);
-
-    let encoder = Self::encoder(&writer_stream)?;
+    let encoder = encoder.open_with(settings.options().to_dict())?;
     let encoder_time_base = get_encoder_time_base(&encoder);
+
+    writer_stream.set_parameters(&encoder);
 
     let scaler_width = encoder.width();
     let scaler_height = encoder.height();
@@ -348,22 +353,6 @@ impl Encoder {
       Err(err)
         => Err(err.into()),
     }
-  }
-
-  /// Helper function to extract encoder from stream.
-  /// 
-  /// # Arguments
-  /// 
-  /// * `writer_stream` - Stream to get encoder of.
-  /// 
-  /// # Returns
-  /// 
-  /// Raw ffmpeg encoder belonging to given stream.
-  fn encoder(writer_stream: &StreamMut) -> Result<AvEncoder> {
-    AvContext::from_parameters(writer_stream.parameters())?
-      .encoder()
-      .video()
-      .map_err(Error::BackendError)
   }
 
   /// Acquire the time base of the output stream.
@@ -474,12 +463,11 @@ impl<'o> Settings<'o> {
   /// # Returns
   /// 
   /// New encoder with settings applied.
-  fn apply_to(&self, mut encoder: AvEncoder) -> AvEncoder {
+  fn apply_to(&self, encoder: &mut AvVideo) {
     encoder.set_width(self.width);
     encoder.set_height(self.height);
     encoder.set_format(self.pixel_format);
     encoder.set_frame_rate(Some((Self::FRAME_RATE, 1)));
-    encoder
   }
 
   /// Get codec.

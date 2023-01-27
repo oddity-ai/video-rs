@@ -299,7 +299,6 @@ impl Decoder {
       scaler,
       size,
       size_out,
-      frame_rate,
     })
   }
   
