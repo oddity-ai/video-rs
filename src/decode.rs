@@ -59,7 +59,6 @@ pub struct Decoder {
   scaler: AvScaler,
   size: (u32, u32),
   size_out: (u32, u32),
-  frame_rate: f32,
 }
 
 impl Decoder {
@@ -224,7 +223,21 @@ impl Decoder {
 
   /// Get the decoders input frame rate as floating-point value.
   pub fn frame_rate(&self) -> f32 {
-    self.frame_rate
+    let frame_rate = self
+      .reader
+      .input
+      .stream(self.reader_stream_index)
+      .map(|stream| stream.rate());
+    
+    if let Some(frame_rate) = frame_rate {
+      if frame_rate.denominator() > 0 {
+        (frame_rate.numerator() as f32) / (frame_rate.denominator() as f32)
+      } else {
+        0.0
+      }
+    } else {
+      0.0
+    }
   }
 
   /// Create a decoder from a `Reader` instance. Optionally provide
@@ -244,9 +257,6 @@ impl Decoder {
       .stream(reader_stream_index)
       .ok_or(AvError::StreamNotFound)?;
 
-    let frame_rate = reader_stream.rate();
-    let frame_rate = frame_rate.numerator() as f32 / frame_rate.denominator() as f32;
-    
     let mut decoder = AvContext::new();
     set_decoder_context_time_base(&mut decoder, reader_stream.time_base());
     decoder.set_parameters(reader_stream.parameters())?;
