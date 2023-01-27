@@ -259,8 +259,11 @@ impl<W: Write> Muxer<W> {
     Ok(self)
   }
 
-  /// Mux a single packet. This will cause the muxer to try and read a
-  /// packet from the preferred stream, mux it, and write it.
+  /// Mux a single packet. This will mux a single packet.
+  /// 
+  /// # Arguments
+  /// 
+  /// * `packet` - Packet to mux.
   pub fn mux(
     &mut self,
     packet: Packet,
@@ -294,7 +297,8 @@ impl<W: Write> Muxer<W> {
       })
     } else {
       self.have_written_header = true;
-      self.writer.write_header()
+      self.writer.write_header()?;
+      self.mux(packet)
     }
   }
 
