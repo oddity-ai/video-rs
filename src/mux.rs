@@ -4,7 +4,6 @@ use std::collections::HashMap;
 
 use ffmpeg::{
   codec::Id as AvCodecId,
-  codec::Context as AvContext,
   Rational as AvRational,
   Error as AvError,
 };
@@ -318,11 +317,7 @@ impl<W: Write> Muxer<W> {
       .output()
       .streams()
       .map(|stream| {
-        let codec = AvContext::from_parameters(stream.parameters())?
-          .codec()
-          .ok_or_else(|| Error::UnsupportedCodecParameterSets)?;
-
-        if codec.id() == AvCodecId::H264 {
+        if stream.codec().id() == AvCodecId::H264 {
           extract_parameter_sets_h264(
             extradata(
               &self.writer.output(),
