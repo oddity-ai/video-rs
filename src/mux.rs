@@ -37,6 +37,7 @@ pub struct Muxer<W: Write> {
   mapping: HashMap<usize, StreamDescription>,
   interleaved: bool,
   have_written_header: bool,
+  have_written_trailer: bool,
 }
 
 /// Represents a muxer that writes to a file.
@@ -195,6 +196,7 @@ impl<W: Write> Muxer<W> {
       mapping: HashMap::new(),
       interleaved: false,
       have_written_header: false,
+      have_written_trailer: false,
     })
   }
 
@@ -334,7 +336,8 @@ impl<W: Write> Muxer<W> {
   /// Signal to the muxer that writing has finished. This will cause a
   /// trailer to be written if the container format has one.
   pub fn finish(&mut self) -> Result<Option<W::Out>> {
-    if self.have_written_header {
+    if self.have_written_header && !self.have_written_trailer {
+      self.have_written_trailer = true;
       self.writer.write_trailer().map(Some)
     } else {
       Ok(None)

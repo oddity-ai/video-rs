@@ -78,7 +78,7 @@ pub struct Encoder {
   scaler_height: u32,
   frame_count: u64,
   have_written_header: bool,
-  have_finished: bool,
+  have_written_trailer: bool,
 }
 
 impl Encoder {
@@ -242,8 +242,8 @@ impl Encoder {
   /// will be called automatically. This will block the caller thread. Any
   /// errors cannot be propagated in this case.
   pub fn finish(&mut self) -> Result<()> {
-    if !self.have_finished {
-      self.have_finished = true;
+    if self.have_written_header && !self.have_written_trailer {
+      self.have_written_trailer = true;
       self.flush()?;
       self.writer.write_trailer()?;
     }
@@ -317,7 +317,7 @@ impl Encoder {
       scaler_height,
       frame_count: 0,
       have_written_header: false,
-      have_finished: false,
+      have_written_trailer: false,
     })
   }
 
