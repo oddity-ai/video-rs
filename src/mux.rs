@@ -333,8 +333,12 @@ impl<W: Write> Muxer<W> {
 
   /// Signal to the muxer that writing has finished. This will cause a
   /// trailer to be written if the container format has one.
-  pub fn finish(&mut self) -> Result<W::Out> {
-    self.writer.write_trailer()
+  pub fn finish(&mut self) -> Result<Option<W::Out>> {
+    if self.have_written_header {
+      self.writer.write_trailer().map(Some)
+    } else {
+      Ok(None)
+    }
   }
 
 }

@@ -131,12 +131,13 @@ impl RtpMuxer {
 
   /// Signal to the muxer that writing has finished. This will cause
   /// trailing packets to be returned if the container format has one.
-  pub fn finish(&mut self) -> Result<Vec<RtpBuf>> {
+  pub fn finish(&mut self) -> Result<Option<Vec<RtpBuf>>> {
     self.0.finish()
       .map(|bufs| bufs
-        .into_iter()
-        .map(|buf| buf.into())
-        .collect())
+        .map(|bufs| bufs
+          .into_iter()
+          .map(|buf| buf.into())
+          .collect()))
   }
 
 }
