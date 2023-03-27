@@ -347,3 +347,6 @@ impl Drop for Decoder {
   }
 
 }
+
+unsafe impl Send for Decoder {}
+unsafe impl Sync for Decoder {}

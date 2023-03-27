@@ -68,3 +68,6 @@ impl Packet {
   }
 
 }
+
+unsafe impl Send for Packet {}
+unsafe impl Sync for Packet {}

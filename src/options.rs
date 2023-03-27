@@ -129,3 +129,4 @@ impl From<HashMap<String, String>> for Options<'_> {
 }
 
 unsafe impl Send for Options<'_> {}
+unsafe impl Sync for Options<'_> {}

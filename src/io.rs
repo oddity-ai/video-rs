@@ -172,6 +172,9 @@ impl Reader {
 
 }
 
+unsafe impl Send for Reader {}
+unsafe impl Sync for Reader {}
+
 /// Any type that implements this can write video packets.
 pub trait Write:
   private::Write + private::Output {}
@@ -278,6 +281,9 @@ impl Writer {
 
 impl Write for Writer {}
 
+unsafe impl Send for Writer {}
+unsafe impl Sync for Writer {}
+
 /// Type alias for a byte buffer.
 pub type Buf = Vec<u8>;
 
@@ -348,6 +354,9 @@ impl Drop for BufWriter {
   }
 
 }
+
+unsafe impl Send for BufWriter {}
+unsafe impl Sync for BufWriter {}
 
 /// Video writer that writes to a packetized buffer.
 pub struct PacketizedBufWriter {
@@ -421,6 +430,9 @@ impl PacketizedBufWriter {
 }
 
 impl Write for PacketizedBufWriter {}
+
+unsafe impl Send for PacketizedBufWriter {}
+unsafe impl Sync for PacketizedBufWriter {}
 
 /// Wrapper type for any valid video source. Currently, this could be
 /// a URI, file path or any other input the backend will accept. Later,

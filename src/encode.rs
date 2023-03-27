@@ -484,3 +484,6 @@ impl<'o> Settings<'o> {
   }
 
 }
+
+unsafe impl Send for Encoder {}
+unsafe impl Sync for Encoder {}

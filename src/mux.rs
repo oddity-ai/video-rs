@@ -346,6 +346,9 @@ impl<W: Write> Muxer<W> {
 
 }
 
+unsafe impl<W: Write> Send for Muxer<W> {}
+unsafe impl<W: Write> Sync for Muxer<W> {}
+
 /// Internal structure that holds the stream index and the time base of the
 /// source packet for rescaling.
 struct StreamDescription {

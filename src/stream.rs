@@ -69,3 +69,6 @@ impl StreamInfo {
   }
 
 }
+
+unsafe impl Send for StreamInfo {}
+unsafe impl Sync for StreamInfo {}

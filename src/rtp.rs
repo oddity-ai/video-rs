@@ -142,6 +142,9 @@ impl RtpMuxer {
 
 }
 
+unsafe impl Send for RtpMuxer {}
+unsafe impl Sync for RtpMuxer {}
+
 /// Buffer-form RTP packet, can be either a normal RTP payload or an
 /// RTCP packet (a sender report).
 pub enum RtpBuf {
