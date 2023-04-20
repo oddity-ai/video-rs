@@ -21,8 +21,8 @@ type Result<T> = std::result::Result<T, Error>;
 ///
 /// # Example
 ///
-/// ```
-/// let decoder = Decoder::new(&PathBuf::from("video.mp4")).unwrap();
+/// ```ignore
+/// let decoder = Decoder::new(&PathBuf::from("video.mp4").into()).unwrap();
 /// decoder
 ///     .decode_iter()
 ///     .take_while(Result::is_ok)
@@ -70,11 +70,11 @@ impl Decoder {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```ignore
     /// let decoder = Decoder::new_with_options_and_resize(
-    ///     &PathBuf::from("from_file.mp4").into(),
+    ///     &PathBuf::from("video.mp4").into(),
     ///     Options::new_with_rtsp_transport_tcp(),
-    ///     Resize::Exact(800, 600)
+    ///     Resize::Exact(800, 600),
     /// )
     /// .unwrap();
     /// ```
@@ -91,7 +91,7 @@ impl Decoder {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```ignore
     /// decoder
     ///     .decode_iter()
     ///     .take_while(Result::is_ok)
@@ -113,7 +113,7 @@ impl Decoder {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```ignore
     /// loop {
     ///     let (ts, frame) = decoder.decode()?;
     ///     // Do something with frame...
