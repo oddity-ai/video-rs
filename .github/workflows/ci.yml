@@ -8,7 +8,7 @@ env:
 jobs:
 
   build-linux:
-    name: build (linux, ffmpeg ${{ matrix.ffmpeg_version }})
+    name: build / linux / ffmpeg ${{ matrix.ffmpeg_version }})
     runs-on: ubuntu-latest
     container: jrottenberg/ffmpeg:${{ matrix.ffmpeg_version }}-ubuntu
 
@@ -41,7 +41,7 @@ jobs:
         run: cargo build
 
   build-macos:
-    name: build (macos)
+    name: build / macos / latest ffmpeg
     runs-on: macos-latest
 
     steps:
@@ -61,7 +61,7 @@ jobs:
         run: cargo build
 
   build-windows:
-    name: build (windows)
+    name: build / windows / latest ffmpeg
     runs-on: windows-latest
 
     strategy:
