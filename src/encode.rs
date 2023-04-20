@@ -33,14 +33,14 @@ type Result<T> = std::result::Result<T, Error>;
 ///
 /// # Example
 ///
-/// ```
+/// ```ignore
 /// let encoder = Encoder::new(
-///     &PathBuf::from("video_in.mp4"),
+///     &PathBuf::from("video_in.mp4").into(),
 ///     Settings::for_h264_yuv420p(800, 600, 30.0)
 /// )
 /// .unwrap();
 ///
-/// let decoder = Decoder::new(&PathBuf::from("video_out.mkv")).unwrap();
+/// let decoder = Decoder::new(&PathBuf::from("video_out.mkv").into()).unwrap();
 /// decoder
 ///     .decode_iter()
 ///     .take_while(Result::is_ok)

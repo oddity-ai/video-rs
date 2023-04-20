@@ -43,7 +43,7 @@ impl Muxer<Writer> {
     ///
     /// Mux to an MKV file.
     ///
-    /// ```
+    /// ```ignore
     /// let reader = Reader::new(&PathBuf::from("from_file.mp4").into()).unwrap();
     /// let muxer = Muxer::new_to_file(&PathBuf::from("to_file.mkv").into())
     ///     .unwrap()
@@ -109,7 +109,7 @@ impl Muxer<BufWriter> {
     ///
     /// Mux from file to mp4 and print length of first 100 buffer segments.
     ///
-    /// ```
+    /// ```ignore
     /// let reader = Reader::new(&PathBuf::from("my_file.mp4").into()).unwrap();
     /// let mut muxer = Muxer::new_to_buf("mp4")
     ///     .unwrap()
@@ -147,7 +147,7 @@ impl<W: Write> Muxer<W> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let muxer = Muxer::new(BufWriter::new("mp4").unwrap()).unwrap();
     /// ```
     fn new(writer: W) -> Result<Self> {

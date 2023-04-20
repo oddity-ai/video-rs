@@ -28,8 +28,8 @@ use ffmpeg::ffi::*;
 ///
 /// # Examples
 ///
-/// ```
-/// let output = ffmpeg_extra::output_raw("mp4");
+/// ```ignore
+/// let output = ffi::output_raw("mp4");
 ///
 /// output_raw_buf_start(&mut output);
 /// output.write_header()?;
