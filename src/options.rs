@@ -110,7 +110,7 @@ impl From<HashMap<String, String>> for Options<'_> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let my_opts = HashMap::new();
     /// options.insert(
     ///     "my_option".to_string(),

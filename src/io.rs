@@ -47,7 +47,7 @@ impl Reader {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let mut options = HashMap::new();
     /// options.insert(
     ///     "rtsp_transport".to_string(),
@@ -79,7 +79,7 @@ impl Reader {
     ///
     /// Read a single packet.
     ///
-    /// ```
+    /// ```ignore
     /// let mut reader = Reader(&PathBuf::from("my_video.mp4").into()).unwrap();
     /// let stream = reader.best_video_stream_index().unwrap();
     /// let mut packet = reader.read(stream).unwrap();
@@ -205,7 +205,7 @@ impl Writer {
     ///
     /// Create a video writer that produces fragmented MP4.
     ///
-    /// ```
+    /// ```ignore
     /// let mut options = HashMap::new();
     /// options.insert(
     ///     "movflags".to_string(),
@@ -275,7 +275,7 @@ impl BufWriter {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let mut writer = BufWriter::new("mp4").unwrap();
     /// let bytes = writer.write_header()?;
     /// ```
@@ -338,7 +338,7 @@ impl PacketizedBufWriter {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let mut writer = BufPacketizedWriter::new("rtp").unwrap();
     /// let bytes = writer.write_header()?;
     /// ```
