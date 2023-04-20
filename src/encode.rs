@@ -147,7 +147,7 @@ impl Encoder {
 
         frame.set_pts(
             source_timestamp
-                .aligned(self.encoder_time_base)
+                .aligned_with_rational(self.encoder_time_base)
                 .into_value(),
         );
 

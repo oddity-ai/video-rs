@@ -31,18 +31,18 @@ impl Packet {
     /// Set packet PTS (presentation timestamp).
     pub fn set_pts(&mut self, timestamp: &Time) {
         self.inner
-            .set_pts(timestamp.aligned(self.time_base).into_value());
+            .set_pts(timestamp.aligned_with_rational(self.time_base).into_value());
     }
 
     /// Set packet DTS (decoder timestamp).
     pub fn set_dts(&mut self, timestamp: &Time) {
         self.inner
-            .set_dts(timestamp.aligned(self.time_base).into_value());
+            .set_dts(timestamp.aligned_with_rational(self.time_base).into_value());
     }
 
     /// Set duration.
     pub fn set_duration(&mut self, timestamp: &Time) {
-        if let Some(duration) = timestamp.aligned(self.time_base).into_value() {
+        if let Some(duration) = timestamp.aligned_with_rational(self.time_base).into_value() {
             self.inner.set_duration(duration);
         }
     }
