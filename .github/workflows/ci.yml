@@ -8,7 +8,7 @@ env:
 jobs:
 
   build-linux:
-    name: build / linux / ffmpeg ${{ matrix.ffmpeg_version }})
+    name: build / linux / ffmpeg ${{ matrix.ffmpeg_version }}
     runs-on: ubuntu-latest
     container: jrottenberg/ffmpeg:${{ matrix.ffmpeg_version }}-ubuntu
 
