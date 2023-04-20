@@ -21,6 +21,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Install dependencies
+        run: |
+          apt update
+          apt install -y --no-install-recommends clang curl pkg-config
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
         with:
@@ -31,6 +36,7 @@ jobs:
         with:
           toolchain: stable
           override: true
+
       - name: Build
         run: cargo build
 
@@ -41,6 +47,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          brew install ffmpeg pkg-config
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
@@ -89,10 +99,16 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    container: jrottenberg/ffmpeg:6-ubuntu
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          apt update
+          apt install -y --no-install-recommends clang curl pkg-config
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
@@ -104,10 +120,17 @@ jobs:
 
   lints:
     runs-on: ubuntu-latest
+    container: jrottenberg/ffmpeg:6-ubuntu
+
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          apt update
+          apt install -y --no-install-recommends clang curl pkg-config
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
