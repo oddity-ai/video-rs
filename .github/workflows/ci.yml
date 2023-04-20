@@ -64,15 +64,8 @@ jobs:
     name: build / windows / latest ffmpeg
     runs-on: windows-latest
 
-    strategy:
-      matrix:
-        include:
-          - ffmpeg_version: latest
-            ffmpeg_download_url: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z
-      fail-fast: false
-
     env:
-      FFMPEG_DOWNLOAD_URL: ${{ matrix.ffmpeg_download_url }}
+      FFMPEG_DOWNLOAD_URL: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z
 
     steps:
       - name: Checkout
