@@ -1,6 +1,10 @@
 extern crate ffmpeg_next as ffmpeg;
 
-use ffmpeg::codec::{decoder::Video as AvDecoder, Context as AvContext};
+use std::collections::VecDeque;
+
+use ffmpeg::codec::decoder::Video as AvDecoder;
+use ffmpeg::codec::packet::Packet as AvPacket;
+use ffmpeg::codec::Context as AvContext;
 use ffmpeg::format::pixel::Pixel as AvPixel;
 use ffmpeg::software::scaling::{context::Context as AvScaler, flag::Flags as AvScalerFlags};
 use ffmpeg::util::error::EAGAIN;
@@ -37,6 +41,7 @@ pub struct Decoder {
     scaler: AvScaler,
     size: (u32, u32),
     size_out: (u32, u32),
+    queue: VecDeque<AvPacket>,
 }
 
 impl Decoder {
@@ -107,6 +112,10 @@ impl Decoder {
 
     /// Decode a single frame.
     ///
+    /// This will first exhaust the inner packet queue. If there are no more queued items, it will
+    /// read a new packet from the input stream. To fill the packet queue manually, use the
+    /// [`read()`] function.
+    ///
     /// # Return value
     ///
     /// A tuple of the frame timestamp (relative to the stream) and the frame itself.
@@ -137,11 +146,21 @@ impl Decoder {
     }
 
     /// Decode a single frame and return the raw ffmpeg `AvFrame`.
+    ///
+    /// This will first exhaust the inner packet queue. If there are no more queued items, it will
+    /// read a new packet from the input stream. To fill the packet queue manually, use the
+    /// [`read()`] function.
+    ///
+    /// # Return value
+    ///
+    /// The decoded raw frame as [`RawFrame`].
     pub fn decode_raw(&mut self) -> Result<RawFrame> {
         let mut frame: Option<RawFrame> = None;
         while frame.is_none() {
-            let mut packet = self.reader.read(self.reader_stream_index)?.into_inner();
-            packet.rescale_ts(self.stream_time_base(), self.decoder_time_base);
+            let packet = match self.queue.pop_front() {
+                Some(packet) => packet,
+                None => self.read_packet()?,
+            };
 
             self.decoder
                 .send_packet(&packet)
@@ -161,13 +180,32 @@ impl Decoder {
         Ok(frame_scaled)
     }
 
+    /// Read the next packet from the inner stream without decoding it.
+    ///
+    /// This will push the packet onto the inner queue. Calls to one of the decoding functions will
+    /// first exhaust the inner packet queue before reading a new packet from the input stream. The
+    /// caller can use [`Decoder::read()`] to fill the buffer ahead of time.
+    pub fn read(&mut self) -> Result<()> {
+        let packet = self.read_packet()?;
+        self.queue.push_back(packet);
+        Ok(())
+    }
+
+    /// Get the number of items in the packet buffer queue.
+    #[inline(always)]
+    pub fn queue_len(&self) -> usize {
+        self.queue.len()
+    }
+
     /// Get the decoders input size (resolution dimensions): width and height.
+    #[inline(always)]
     pub fn size(&self) -> (u32, u32) {
         self.size
     }
 
     /// Get the decoders output size after resizing is applied (resolution dimensions): width and
     /// height.
+    #[inline(always)]
     pub fn size_out(&self) -> (u32, u32) {
         self.size_out
     }
@@ -243,7 +281,21 @@ impl Decoder {
             scaler,
             size,
             size_out,
+            queue: VecDeque::new(),
         })
+    }
+
+    /// Read the next packet from the inner stream without decoding it.
+    ///
+    /// This function also rescales the packet timestamps so they align with the decoder time base.
+    ///
+    /// # Return value
+    ///
+    /// The next packet from the inner stream as [`AvPacket`].
+    fn read_packet(&mut self) -> Result<AvPacket> {
+        let mut packet = self.reader.read(self.reader_stream_index)?.into_inner();
+        packet.rescale_ts(self.stream_time_base(), self.decoder_time_base);
+        Ok(packet)
     }
 
     /// Pull a decoded frame from the decoder. This function also implements retry mechanism in case
