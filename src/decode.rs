@@ -1,7 +1,5 @@
 extern crate ffmpeg_next as ffmpeg;
 
-use std::collections::VecDeque;
-
 use ffmpeg::codec::decoder::Video as AvDecoder;
 use ffmpeg::codec::packet::Packet as AvPacket;
 use ffmpeg::codec::Context as AvContext;
@@ -41,7 +39,6 @@ pub struct Decoder {
     scaler: AvScaler,
     size: (u32, u32),
     size_out: (u32, u32),
-    queue: VecDeque<AvPacket>,
 }
 
 impl Decoder {
@@ -112,10 +109,6 @@ impl Decoder {
 
     /// Decode a single frame.
     ///
-    /// This will first exhaust the inner packet queue. If there are no more queued items, it will
-    /// read a new packet from the input stream. To fill the packet queue manually, use the
-    /// [`read()`] function.
-    ///
     /// # Return value
     ///
     /// A tuple of the frame timestamp (relative to the stream) and the frame itself.
@@ -147,21 +140,13 @@ impl Decoder {
 
     /// Decode a single frame and return the raw ffmpeg `AvFrame`.
     ///
-    /// This will first exhaust the inner packet queue. If there are no more queued items, it will
-    /// read a new packet from the input stream. To fill the packet queue manually, use the
-    /// [`read()`] function.
-    ///
     /// # Return value
     ///
     /// The decoded raw frame as [`RawFrame`].
     pub fn decode_raw(&mut self) -> Result<RawFrame> {
         let mut frame: Option<RawFrame> = None;
         while frame.is_none() {
-            let packet = match self.queue.pop_front() {
-                Some(packet) => packet,
-                None => self.read_packet()?,
-            };
-
+            let packet = self.read_packet()?;
             self.decoder
                 .send_packet(&packet)
                 .map_err(Error::BackendError)?;
@@ -178,23 +163,6 @@ impl Decoder {
         copy_frame_props(&frame, &mut frame_scaled);
 
         Ok(frame_scaled)
-    }
-
-    /// Read the next packet from the inner stream without decoding it.
-    ///
-    /// This will push the packet onto the inner queue. Calls to one of the decoding functions will
-    /// first exhaust the inner packet queue before reading a new packet from the input stream. The
-    /// caller can use [`Decoder::read()`] to fill the buffer ahead of time.
-    pub fn read(&mut self) -> Result<()> {
-        let packet = self.read_packet()?;
-        self.queue.push_back(packet);
-        Ok(())
-    }
-
-    /// Get the number of items in the packet buffer queue.
-    #[inline(always)]
-    pub fn queue_len(&self) -> usize {
-        self.queue.len()
     }
 
     /// Get the decoders input size (resolution dimensions): width and height.
@@ -281,7 +249,6 @@ impl Decoder {
             scaler,
             size,
             size_out,
-            queue: VecDeque::new(),
         })
     }
 
