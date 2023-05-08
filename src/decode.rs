@@ -1,7 +1,6 @@
 extern crate ffmpeg_next as ffmpeg;
 
 use ffmpeg::codec::decoder::Video as AvDecoder;
-use ffmpeg::codec::packet::Packet as AvPacket;
 use ffmpeg::codec::Context as AvContext;
 use ffmpeg::format::pixel::Pixel as AvPixel;
 use ffmpeg::software::scaling::{context::Context as AvScaler, flag::Flags as AvScalerFlags};
@@ -12,6 +11,7 @@ use crate::ffi::{copy_frame_props, set_decoder_context_time_base};
 use crate::frame::FRAME_PIXEL_FORMAT;
 use crate::io::Reader;
 use crate::options::Options;
+use crate::packet::Packet;
 use crate::{Error, Locator, RawFrame, Resize};
 
 #[cfg(feature = "ndarray")]
@@ -19,7 +19,7 @@ use crate::{ffi::convert_frame_to_ndarray_rgb24, Frame, Time};
 
 type Result<T> = std::result::Result<T, Error>;
 
-/// Decodes video streams and provides the caller with decoded RGB frames.
+/// Decode video files and streams.
 ///
 /// # Example
 ///
@@ -32,13 +32,9 @@ type Result<T> = std::result::Result<T, Error>;
 /// );
 /// ```
 pub struct Decoder {
+    decoder: DecoderSplit,
     reader: Reader,
     reader_stream_index: usize,
-    decoder: AvDecoder,
-    decoder_time_base: AvRational,
-    scaler: AvScaler,
-    size: (u32, u32),
-    size_out: (u32, u32),
 }
 
 impl Decoder {
@@ -48,7 +44,13 @@ impl Decoder {
     ///
     /// * `source` - Locator to file to decode.
     pub fn new(source: &Locator) -> Result<Self> {
-        Self::from_reader(Reader::new(source)?, None)
+        let reader = Reader::new(source)?;
+        let reader_stream_index = reader.best_video_stream_index()?;
+        Ok(Self {
+            decoder: DecoderSplit::new(&reader, reader_stream_index, None)?,
+            reader,
+            reader_stream_index,
+        })
     }
 
     /// Create a new decoder for the specified file with input options.
@@ -58,7 +60,13 @@ impl Decoder {
     /// * `source` - Locator to file to decode.
     /// * `options` - The input options.
     pub fn new_with_options(source: &Locator, options: &Options) -> Result<Self> {
-        Self::from_reader(Reader::new_with_options(source, options)?, None)
+        let reader = Reader::new_with_options(source, options)?;
+        let reader_stream_index = reader.best_video_stream_index()?;
+        Ok(Self {
+            decoder: DecoderSplit::new(&reader, reader_stream_index, None)?,
+            reader,
+            reader_stream_index,
+        })
     }
 
     /// Create a new decoder for the specified file with input options and custom dimensions. Each
@@ -85,7 +93,13 @@ impl Decoder {
         options: &Options,
         resize: Resize,
     ) -> Result<Self> {
-        Self::from_reader(Reader::new_with_options(source, options)?, Some(resize))
+        let reader = Reader::new_with_options(source, options)?;
+        let reader_stream_index = reader.best_video_stream_index()?;
+        Ok(Self {
+            decoder: DecoderSplit::new(&reader, reader_stream_index, Some(resize))?,
+            reader,
+            reader_stream_index,
+        })
     }
 
     /// Decode frames through iterator interface. This is similar to `decode` but it returns frames
@@ -123,13 +137,12 @@ impl Decoder {
     /// ```
     #[cfg(feature = "ndarray")]
     pub fn decode(&mut self) -> Result<(Time, Frame)> {
-        let frame = &mut self.decode_raw()?;
-        // We use the packet DTS here (which is `frame->pkt_dts`) because that is what the encoder
-        // will use when encoding for the `PTS` field.
-        let timestamp = Time::new(Some(frame.packet().dts), self.decoder_time_base);
-        let frame = convert_frame_to_ndarray_rgb24(frame).map_err(Error::BackendError)?;
-
-        Ok((timestamp, frame))
+        Ok(loop {
+            let packet = self.reader.read(self.reader_stream_index)?;
+            if let Some(frame) = self.decoder.decode(packet)? {
+                break frame;
+            }
+        })
     }
 
     /// Decode frames through iterator interface. This is similar to `decode_raw` but it returns
@@ -144,38 +157,38 @@ impl Decoder {
     ///
     /// The decoded raw frame as [`RawFrame`].
     pub fn decode_raw(&mut self) -> Result<RawFrame> {
-        let mut frame: Option<RawFrame> = None;
-        while frame.is_none() {
-            let packet = self.read_packet()?;
-            self.decoder
-                .send_packet(&packet)
-                .map_err(Error::BackendError)?;
+        Ok(loop {
+            let packet = self.reader.read(self.reader_stream_index)?;
+            if let Some(frame) = self.decoder.decode_raw(packet)? {
+                break frame;
+            }
+        })
+    }
 
-            frame = self.decoder_receive_frame()?;
-        }
-
-        let frame = frame.unwrap();
-        let mut frame_scaled = RawFrame::empty();
-        self.scaler
-            .run(&frame, &mut frame_scaled)
-            .map_err(Error::BackendError)?;
-
-        copy_frame_props(&frame, &mut frame_scaled);
-
-        Ok(frame_scaled)
+    /// Split the decoder into a decoder (of type [`DecoderSplit`]) and a [`Reader`].
+    ///
+    /// This allows the caller to detach stream reading from decoding, which is useful for advanced
+    /// use cases.
+    ///
+    /// # Return value
+    ///
+    /// Tuple of the [`DecoderSplit`], [`Reader`] and the reader stream index.
+    #[inline]
+    pub fn into_parts(self) -> (DecoderSplit, Reader, usize) {
+        (self.decoder, self.reader, self.reader_stream_index)
     }
 
     /// Get the decoders input size (resolution dimensions): width and height.
     #[inline(always)]
     pub fn size(&self) -> (u32, u32) {
-        self.size
+        self.decoder.size
     }
 
     /// Get the decoders output size after resizing is applied (resolution dimensions): width and
     /// height.
     #[inline(always)]
     pub fn size_out(&self) -> (u32, u32) {
-        self.size_out
+        self.decoder.size_out
     }
 
     /// Get the decoders input frame rate as floating-point value.
@@ -196,16 +209,98 @@ impl Decoder {
             0.0
         }
     }
+}
 
-    /// Create a decoder from a `Reader` instance. Optionally provide dimensions to resize frames
-    /// to.
+/// Decoder part of a split [`Decoder`] and [`Reader`].
+pub struct DecoderSplit {
+    decoder: AvDecoder,
+    decoder_time_base: AvRational,
+    scaler: AvScaler,
+    size: (u32, u32),
+    size_out: (u32, u32),
+}
+
+impl DecoderSplit {
+    /// Decode a [`Packet`].
+    ///
+    /// Feeds the packet to the decoder and returns a frame if there is one available. The caller
+    /// should keep feeding packets until the decoder returns a frame.
+    ///
+    /// # Return value
+    ///
+    /// A tuple of the [`Frame`] and timestamp (relative to the stream) and the frame itself if the
+    /// decoder has a frame available, [`None`] if not.
+    #[cfg(feature = "ndarray")]
+    pub fn decode(&mut self, packet: Packet) -> Result<Option<(Time, Frame)>> {
+        match self.decode_raw(packet)? {
+            Some(mut frame) => {
+                // We use the packet DTS here (which is `frame->pkt_dts`) because that is what the
+                // encoder will use when encoding for the `PTS` field.
+                let timestamp = Time::new(Some(frame.packet().dts), self.decoder_time_base);
+                let frame =
+                    convert_frame_to_ndarray_rgb24(&mut frame).map_err(Error::BackendError)?;
+
+                Ok(Some((timestamp, frame)))
+            }
+            None => Ok(None),
+        }
+    }
+
+    /// Decode a [`Packet`].
+    ///
+    /// Feeds the packet to the decoder and returns a frame if there is one available. The caller
+    /// should keep feeding packets until the decoder returns a frame.
+    ///
+    /// # Return value
+    ///
+    /// The decoded raw frame as [`RawFrame`] if the decoder has a frame available, [`None`] if not.
+    pub fn decode_raw(&mut self, packet: Packet) -> Result<Option<RawFrame>> {
+        let (mut packet, packet_time_base) = packet.into_inner_parts();
+        packet.rescale_ts(packet_time_base, self.decoder_time_base);
+
+        self.decoder
+            .send_packet(&packet)
+            .map_err(Error::BackendError)?;
+
+        match self.decoder_receive_frame()? {
+            Some(frame) => {
+                let mut frame_scaled = RawFrame::empty();
+                self.scaler
+                    .run(&frame, &mut frame_scaled)
+                    .map_err(Error::BackendError)?;
+
+                copy_frame_props(&frame, &mut frame_scaled);
+
+                Ok(Some(frame_scaled))
+            }
+            None => Ok(None),
+        }
+    }
+
+    /// Get the decoders input size (resolution dimensions): width and height.
+    #[inline(always)]
+    pub fn size(&self) -> (u32, u32) {
+        self.size
+    }
+
+    /// Get the decoders output size after resizing is applied (resolution dimensions): width and
+    /// height.
+    #[inline(always)]
+    pub fn size_out(&self) -> (u32, u32) {
+        self.size_out
+    }
+
+    /// Create a new [`DecoderSplit`].
     ///
     /// # Arguments
     ///
-    /// * `reader` - `Reader` to create decoder from.
+    /// * `reader` - [`Reader`] to initialize decoder from.
     /// * `resize` - Optional resize strategy to apply to frames.
-    fn from_reader(reader: Reader, resize: Option<Resize>) -> Result<Self> {
-        let reader_stream_index = reader.best_video_stream_index()?;
+    pub fn new(
+        reader: &Reader,
+        reader_stream_index: usize,
+        resize: Option<Resize>,
+    ) -> Result<Self> {
         let reader_stream = reader
             .input
             .stream(reader_stream_index)
@@ -242,27 +337,12 @@ impl Decoder {
         let size_out = (resize_width, resize_height);
 
         Ok(Self {
-            reader,
-            reader_stream_index,
             decoder,
             decoder_time_base,
             scaler,
             size,
             size_out,
         })
-    }
-
-    /// Read the next packet from the inner stream without decoding it.
-    ///
-    /// This function also rescales the packet timestamps so they align with the decoder time base.
-    ///
-    /// # Return value
-    ///
-    /// The next packet from the inner stream as [`AvPacket`].
-    fn read_packet(&mut self) -> Result<AvPacket> {
-        let mut packet = self.reader.read(self.reader_stream_index)?.into_inner();
-        packet.rescale_ts(self.stream_time_base(), self.decoder_time_base);
-        Ok(packet)
     }
 
     /// Pull a decoded frame from the decoder. This function also implements retry mechanism in case
@@ -276,18 +356,9 @@ impl Decoder {
             Err(err) => Err(err.into()),
         }
     }
-
-    // Acquire the time base of the input stream.
-    fn stream_time_base(&self) -> AvRational {
-        self.reader
-            .input
-            .stream(self.reader_stream_index)
-            .unwrap()
-            .time_base()
-    }
 }
 
-impl Drop for Decoder {
+impl Drop for DecoderSplit {
     fn drop(&mut self) {
         // Maximum number of invocations to `decoder_receive_frame` to drain the items still on the
         // queue before giving up.
@@ -304,5 +375,5 @@ impl Drop for Decoder {
     }
 }
 
-unsafe impl Send for Decoder {}
-unsafe impl Sync for Decoder {}
+unsafe impl Send for DecoderSplit {}
+unsafe impl Sync for DecoderSplit {}
