@@ -158,6 +158,22 @@ impl Reader {
             .ok_or(AvError::StreamNotFound)?
             .index())
     }
+
+    /// Get buffer size of underlying socket for RTSP TCP interleaved input.
+    ///
+    /// # Safety
+    ///
+    /// Input must be:
+    /// * open and valid;
+    /// * an RTSP demuxer;
+    /// * operating in TCP interleaved mode.
+    ///
+    /// # Return value
+    ///
+    /// Number of available bytes in underlying socket.
+    pub unsafe fn rtsp_tcp_bufsize(&self) -> usize {
+        ffi::input_rtsp_interleaved_tcp_buffer_size(&self.input)
+    }
 }
 
 unsafe impl Send for Reader {}

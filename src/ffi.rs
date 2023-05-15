@@ -26,10 +26,10 @@ use ffmpeg::ffi::*;
 /// # Arguments
 ///
 /// * `input` - Input to retrieve buffer size of.
-pub unsafe fn input_rtsp_interleaved_tcp_buffer_size(input: &mut Input) -> usize {
-    let input_rtsp_state = (*input.as_mut_ptr()).priv_data as *mut RTSPState;
+pub unsafe fn input_rtsp_interleaved_tcp_buffer_size(input: &Input) -> usize {
+    let input_rtsp_state = (*input.as_ptr()).priv_data as *const RTSPState;
     let input_rtsp_url_context = (*input_rtsp_state).rtsp_hd;
-    let input_rtsp_tcp_context = (*input_rtsp_url_context).priv_data as *mut _TCPContext;
+    let input_rtsp_tcp_context = (*input_rtsp_url_context).priv_data as *const _TCPContext;
     let mut available: libc::c_int = 0;
     libc::ioctl((*input_rtsp_tcp_context).fd, libc::FIONREAD, &mut available);
     available
