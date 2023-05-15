@@ -6,7 +6,8 @@ use ndarray::Array3;
 use ffmpeg::codec::codec::Codec;
 use ffmpeg::codec::context::Context;
 use ffmpeg::encoder::video::Video;
-use ffmpeg::format::context::Output;
+use ffmpeg::format::context::{Input, Output};
+use ffmpeg::util::dictionary::Owned as Dictionary;
 use ffmpeg::util::frame::video::Video as Frame;
 use ffmpeg::{Error, Rational};
 
@@ -14,6 +15,27 @@ use ffmpeg::{Error, Rational};
 use ffmpeg::util::format::Pixel;
 
 use ffmpeg::ffi::*;
+
+// TODO
+pub fn rtsp_set_non_blocking(input: &mut Input) {
+    unsafe {
+        let input_rtsp_state = (*input.as_mut_ptr()).priv_data as *mut RTSPState;
+        let input_rtsp_url_context = (*input_rtsp_state).rtsp_hd;
+        let input_rtsp_tcp_context = (*input_rtsp_url_context).priv_data as *mut _TCPContext;
+        //(*input_rtsp_url_context).flags |= 0x00000008;
+        // println!(
+        //     "filename: {}",
+        //     std::ffi::CStr::from_ptr((*input_rtsp_url_context).filename).to_string_lossy()
+        // );
+        //println!("flags: {}", (*input_rtsp_url_context).flags);
+        // println!("fd: {}", (*input_rtsp_tcp_context).fd);
+        // println!("bufsize: {}", (*input_rtsp_tcp_context).fd);
+        let mut available = 0;
+        libc::ioctl((*input_rtsp_tcp_context).fd, libc::FIONREAD, &mut available);
+        println!("buflen: {available}");
+    }
+    // TODO
+}
 
 /// This function is similar to the existing bindings in ffmpeg-next like `output` and `output_as`,
 /// but does not assume that it is opening a file-like context. Instead, it opens a raw output,
@@ -558,4 +580,28 @@ struct RTPMuxContext {
     pub base_timestamp: u32,
     pub cur_timestamp: u32,
     pub max_payload_size: std::ffi::c_int,
+}
+
+/// Rust version of the `RTSPState` struct in `libavformat`.
+#[repr(C)]
+struct RTSPState {
+    _av_class: *const AVClass,
+    pub rtsp_hd: *mut _URLContext,
+}
+
+/// Rust version of the `URLContext` struct in `libavformat`.
+#[repr(C)]
+struct _URLContext {
+    _av_class: *const AVClass,
+    _prot: *const std::ffi::c_void,
+    pub priv_data: *mut std::ffi::c_void,
+    pub filename: *mut std::ffi::c_char,
+    pub flags: std::ffi::c_int,
+}
+
+/// Rust version of the `TCPContext` struct in `libavformat`.
+#[repr(C)]
+struct _TCPContext {
+    _av_class: *const AVClass,
+    pub fd: std::ffi::c_int,
 }
