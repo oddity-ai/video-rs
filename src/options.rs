@@ -32,8 +32,6 @@ impl Options<'_> {
         // sources sometimes.
         opts.set("rw_timeout", "16000000");
         opts.set("stimeout", "16000000");
-        // TODO
-        opts.set("nonblocking", "true");
 
         Self(opts)
     }
@@ -89,12 +87,6 @@ impl Options<'_> {
         Self(opts)
     }
 
-    /// Get option value.
-    #[inline(always)]
-    pub(super) fn get(&self, key: &str) -> Option<&str> {
-        self.0.get(key)
-    }
-
     /// Convert back to ffmpeg native dictionary, which can be used with `ffmpeg_next` functions.
     pub(super) fn to_dict(&self) -> AvDictionary {
         self.0.clone()
@@ -110,7 +102,7 @@ impl Default for Options<'_> {
 impl From<HashMap<String, String>> for Options<'_> {
     /// Converts from `HashMap` to `Options`.
     ///
-    /// Note: Calls [`Options::new_from_hashmap()`] internally.
+    /// Note: Calls `Options::new_from_hashamp` internally.
     ///
     /// # Arguments
     ///

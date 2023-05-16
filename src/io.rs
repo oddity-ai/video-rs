@@ -61,17 +61,7 @@ impl Reader {
     /// .unwrap();
     /// ```
     pub fn new_with_options(source: &Locator, options: &Options) -> Result<Self> {
-        // TODO: we can maybe do this with `AVIOInterruptCB`!
-        let nonblocking = options
-            .get("nonblocking")
-            .map(|value| value.parse::<bool>().unwrap_or(false))
-            .unwrap_or(false);
-        let input = if nonblocking {
-            println!("NON-BLOCKING ON!"); // TODO
-            ffmpeg::format::input_with_dictionary(&source.resolve(), options.to_dict())?
-        } else {
-            ffmpeg::format::input_with_dictionary(&source.resolve(), options.to_dict())?
-        };
+        let input = ffmpeg::format::input_with_dictionary(&source.resolve(), options.to_dict())?;
 
         Ok(Self {
             source: source.clone(),
@@ -97,30 +87,16 @@ impl Reader {
     pub fn read(&mut self, stream_index: usize) -> Result<Packet> {
         let mut error_count = 0;
         loop {
-            // TODO: remove
-            // unsafe {
-            //     (*self.input.as_mut_ptr()).debug = 1;
-            // }
-            ffi::rtsp_set_non_blocking(&mut self.input); // TODO
-            let mut packet = AvPacket::empty();
-            match packet.read(&mut self.input) {
-                Ok(()) => {
-                    if packet.stream() == stream_index {
-                        return Ok(Packet::new(
-                            packet,
-                            self.input.stream(stream_index).unwrap().time_base(),
-                        ));
+            match self.input.packets().next() {
+                Some((stream, packet)) => {
+                    if stream.index() == stream_index {
+                        return Ok(Packet::new(packet, stream.time_base()));
                     }
                 }
-                Err(AvError::Eof) => return Err(Error::ReadExhausted),
-                Err(AvError::Other {
-                    errno: ffmpeg::ffi::EAGAIN,
-                }) => return Err(Error::ReadAgain),
-                Err(err) => {
-                    println!("{:?}", err); // TODO
+                None => {
                     error_count += 1;
                     if error_count > 3 {
-                        return Err(err.into());
+                        return Err(Error::ReadExhausted);
                     }
                 }
             }
