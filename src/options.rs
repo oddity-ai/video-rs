@@ -87,6 +87,12 @@ impl Options<'_> {
         Self(opts)
     }
 
+    /// Get option value.
+    #[inline(always)]
+    pub(super) fn get(&self, key: &str) -> Option<&str> {
+        self.0.get(key)
+    }
+
     /// Convert back to ffmpeg native dictionary, which can be used with `ffmpeg_next` functions.
     pub(super) fn to_dict(&self) -> AvDictionary {
         self.0.clone()
