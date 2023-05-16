@@ -15,4 +15,4 @@ tracing = "0.1"
 ffmpeg-next = { version = "6.0", features = ["format", "codec", "software-resampling", "software-scaling"] }
 url = "2"
 ndarray = { version = "0.15", optional = true }
-libc = "0.2"
+libc = "*" # TODO

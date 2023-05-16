@@ -32,6 +32,8 @@ impl Options<'_> {
         // sources sometimes.
         opts.set("rw_timeout", "16000000");
         opts.set("stimeout", "16000000");
+        // TODO
+        opts.set("nonblocking", "true");
 
         Self(opts)
     }
