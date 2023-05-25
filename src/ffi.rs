@@ -1,5 +1,6 @@
 extern crate ffmpeg_next as ffmpeg;
 
+use std::ffi::c_char;
 #[cfg(feature = "ndarray")]
 use ndarray::Array3;
 
@@ -378,8 +379,8 @@ pub fn rtp_h264_mode_0(output: &Output) -> bool {
     unsafe {
         av_opt_flag_is_set(
             (*output.as_ptr()).priv_data,
-            "rtpflags".as_ptr() as *const i8,
-            "h264_mode0".as_ptr() as *const i8,
+            "rtpflags".as_ptr() as *const c_char,
+            "h264_mode0".as_ptr() as *const c_char,
         ) != 0
     }
 }
