@@ -490,7 +490,7 @@ unsafe extern "C" fn log_callback(
     if event_would_log {
         // Allocate some memory for the log line (might be truncated). 1024 bytes is the number used
         // by ffmpeg itself, so it should be mostly fine.
-        let mut line = [0_i8; 1024];
+        let mut line = [0; 1024];
         // Use the ffmpeg default formatting.
         let ret = av_log_format_line2(
             avcl,
