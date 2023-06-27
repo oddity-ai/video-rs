@@ -15,7 +15,7 @@ and decoding.
 ⚠️ This project is still a work-in-progress, and will contain bugs. Some parts of
 the API have not been flushed out yet. Use with caution.
 
-Also check out our other video/audio project [`rave`](https://github.com/oddity-ai/rave). `rave` is still in development, but its eventual goal is to replace `video-rs` without any dependency on ffmpeg.
+Also check out our other video/audio project [`rave`](https://github.com/oddity-ai/rave). `rave` is still in development, but its eventual goal is to replace `video-rs` and provide a fully featured media library without depending on ffmpeg.
 
 ## 📦 Setup
 
