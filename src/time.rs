@@ -32,6 +32,18 @@ impl Time {
         Self { time, time_base }
     }
 
+    /// Align the timestamp with a different time base.
+    ///
+    /// # Arguments
+    ///
+    /// # Return value
+    ///
+    /// The same timestamp, with the time base changed.
+    #[inline]
+    pub fn with_time_base(&self, time_base: AvRational) -> Self {
+        self.aligned_with_rational(time_base)
+    }
+
     /// Creates a new timestamp that reprsents `nth` of a second.
     ///
     /// # Arguments
@@ -253,6 +265,15 @@ mod tests {
         assert!(time.has_value());
         assert_eq!(time.as_secs(), 2.0 / 3.0);
         assert_eq!(time.into_value(), Some(2));
+    }
+
+    #[test]
+    fn test_with_time_base() {
+        let time = Time::new(Some(2), AvRational::new(3, 9));
+        assert_eq!(time.as_secs(), 2.0 / 3.0);
+        let time = time.with_time_base(AvRational::new(1, 9));
+        assert_eq!(time.as_secs(), 2.0 / 3.0);
+        assert_eq!(time.into_value(), Some(6));
     }
 
     #[test]
