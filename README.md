@@ -152,7 +152,16 @@ fn hsv_to_rgb(h: f32, s: f32, v: f32) -> [u8; 3] {
 
 ```
 
-## License
+## ✨ Credits
+
+`video-rs` only exists thanks to the following organizations and people:
+
+* All [contributors](https://github.com/oddity-ai/video-rs/graphs/contributors) for their work!
+* [Provincie Utrecht](https://www.provincie-utrecht.nl/) for supporting this project as part of the "Situational Awareness Software" project.
+* [zmwangx](https://github.com/zmwangx) for maintaining [rust-ffmpeg](https://github.com/zmwangx/rust-ffmpeg).
+* The [FFmpeg project](https://ffmpeg.org/) for `ffmpeg` and the `ffmpeg` libraries.
+
+## ⚖️ License
 
 Licensed under either of
 
