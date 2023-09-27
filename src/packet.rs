@@ -31,6 +31,12 @@ impl Packet {
         Time::new(Some(self.inner.duration()), self.time_base)
     }
 
+    // Check whether packet is key.
+    #[inline]
+    pub fn is_key(&self) -> bool {
+        self.inner.is_key()
+    }
+
     /// Set packet PTS (presentation timestamp).
     #[inline]
     pub fn set_pts(&mut self, timestamp: &Time) {
