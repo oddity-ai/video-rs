@@ -88,7 +88,7 @@ pub fn output_raw_buf_end(output: &mut Output) -> Vec<u8> {
         // context. We stored the dyn buf there when we called `output_raw_buf_start`. Secondly, the
         // `close_dyn_buf` function will place a pointer to the starting address of the buffer in
         // `buffer_raw` through a ptr ptr. It also returns the size of that buffer.
-        let output_pb = ((*output.as_mut_ptr()).pb) as *mut AVIOContext;
+        let output_pb = (*output.as_mut_ptr()).pb;
         let mut buffer_raw: *mut u8 = std::ptr::null_mut();
         let buffer_size = avio_close_dyn_buf(output_pb, (&mut buffer_raw) as *mut *mut u8) as usize;
 
@@ -130,7 +130,7 @@ pub fn output_raw_packetized_buf_start(
         let buffer = av_malloc(max_packet_size) as *mut u8;
 
         // Create a custom IO context around our buffer.
-        let mut io: *mut AVIOContext = avio_alloc_context(
+        let io: *mut AVIOContext = avio_alloc_context(
             buffer,
             max_packet_size.try_into().unwrap(),
             // Set stream to WRITE.
@@ -163,7 +163,7 @@ pub fn output_raw_packetized_buf_start(
 /// * `output` - Output context to end write on.
 pub fn output_raw_packetized_buf_end(output: &mut Output) {
     unsafe {
-        let output_pb = ((*output.as_mut_ptr()).pb) as *mut AVIOContext;
+        let output_pb = (*output.as_mut_ptr()).pb;
 
         // One last flush (might incur write, most likely won't).
         avio_flush(output_pb);
