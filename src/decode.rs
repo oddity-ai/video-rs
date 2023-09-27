@@ -227,7 +227,6 @@ pub struct DecoderSplit {
 }
 
 impl DecoderSplit {
-
     /// Get decoder time base.
     #[inline]
     pub fn time_base(&self) -> AvRational {
