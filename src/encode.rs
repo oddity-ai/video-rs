@@ -126,6 +126,12 @@ impl Encoder {
         self
     }
 
+    /// Get encoder time base.
+    #[inline]
+    pub fn time_base(&self) -> AvRational {
+        self.encoder_time_base
+    }
+
     /// Encode a single `ndarray` frame.
     ///
     /// # Arguments

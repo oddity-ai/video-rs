@@ -102,6 +102,12 @@ impl Decoder {
         })
     }
 
+    /// Get decoder time base.
+    #[inline]
+    pub fn time_base(&self) -> AvRational {
+        self.decoder.time_base()
+    }
+
     /// Decode frames through iterator interface. This is similar to `decode` but it returns frames
     /// through an infinite iterator.
     ///
@@ -221,6 +227,12 @@ pub struct DecoderSplit {
 }
 
 impl DecoderSplit {
+    /// Get decoder time base.
+    #[inline]
+    pub fn time_base(&self) -> AvRational {
+        self.decoder_time_base
+    }
+
     /// Decode a [`Packet`].
     ///
     /// Feeds the packet to the decoder and returns a frame if there is one available. The caller
