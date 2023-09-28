@@ -12,10 +12,13 @@ and decoding.
 
 ## 🛠 S️️tatus
 
-⚠️ This project is still a work-in-progress, and will contain bugs. Some parts of
-the API have not been flushed out yet. Use with caution.
+⚠️ This project is still a work-in-progress, and will contain bugs. Some parts
+of the API have not been flushed out yet. Use with caution.
 
-Also check out our other video/audio project [`rave`](https://github.com/oddity-ai/rave). `rave` is still in development, but its eventual goal is to replace `video-rs` and provide a fully featured media library without depending on ffmpeg.
+Also check out our other video/audio project
+[`rave`](https://github.com/oddity-ai/rave). `rave` is still in development,
+but its eventual goal is to replace `video-rs` and provide a fully featured
+media library without depending on ffmpeg.
 
 ## 📦 Setup
 
@@ -150,6 +153,36 @@ fn hsv_to_rgb(h: f32, s: f32, v: f32) -> [u8; 3] {
     ]
 }
 
+```
+
+## 🪲 Debugging
+
+Ffmpeg does not always produce useful error messages directly. It is
+recommended to turn on tracing if you run into an issue to see if there is
+extra information present in the log messages.
+
+Add the following packages to `Cargo.toml`:
+
+```toml
+[dependencies]
+tracing = "0.1"
+tracing-subscriber = "0.3"
+```
+
+And add the following to your main functions:
+
+```rust
+fn main() {
+    tracing_subscriber::fmt::init();
+
+    // ...
+}
+```
+
+Set the `RUST_LOG` environment variable to display tracing messages:
+
+```sh
+RUST_LOG=video=debug cargo run
 ```
 
 ## ✨ Credits
