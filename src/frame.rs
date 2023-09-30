@@ -1,6 +1,6 @@
 extern crate ffmpeg_next as ffmpeg;
 
-use ffmpeg::util::format::Pixel as AvPixel;
+pub use ffmpeg::util::format::Pixel as AvPixel;
 use ffmpeg::util::frame::Video as AvFrame;
 
 /// Re-export internal `AvFrame` for caller to use.

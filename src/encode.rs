@@ -395,6 +395,29 @@ impl<'o> Settings<'o> {
         }
     }
 
+    /// Create encoder settings for an H264 stream with a custom pixel format and options.
+    /// This allows for greater flexibility in encoding settings, enabling specific requirements
+    /// or optimizations to be set depending on the use case.
+    ///
+    /// # Arguments
+    ///
+    /// * `width` - The width of the video stream.
+    /// * `height` - The height of the video stream.
+    /// * `pixel_format` - The desired pixel format for the video stream.
+    /// * `options` - Custom H264 encoding options.
+    ///
+    /// # Return value
+    ///
+    /// A `Settings` instance with the specified configuration.
+    pub fn for_h264_custom(width: usize, height: usize, pixel_format: AvPixel, options: Options<'o>) -> Settings<'o> {
+        Self {
+            width: width as u32,
+            height: height as u32,
+            pixel_format,
+            options,
+        }
+    }
+
     /// Apply the settings to an encoder.
     ///
     /// # Arguments
