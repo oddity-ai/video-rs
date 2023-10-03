@@ -18,7 +18,7 @@ pub use decode::{Decoder, DecoderSplit};
 pub use encode::{Encoder, Settings as EncoderSettings};
 pub use error::Error;
 pub use extradata::{Pps, Sps};
-pub use frame::AvPixel;
+pub use frame::PixelFormat;
 pub use frame::RawFrame;
 pub use init::init;
 pub use io::{Buf, Reader, Write, Writer};
