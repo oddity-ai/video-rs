@@ -21,7 +21,7 @@ use crate::{
     frame::FRAME_PIXEL_FORMAT,
     io::{private::Write, Writer},
     options::Options,
-    Error, Locator, RawFrame, PixelFormat
+    Error, Locator, PixelFormat, RawFrame,
 };
 
 #[cfg(feature = "ndarray")]
@@ -408,8 +408,14 @@ impl<'o> Settings<'o> {
     ///
     /// # Return value
     ///
-    /// A `Settings` instance with the specified configuration.
-    pub fn for_h264_custom(width: usize, height: usize, pixel_format: PixelFormat, options: Options<'o>) -> Settings<'o> {
+    /// A `Settings` instance with the specified configuration.+
+    pub fn for_h264_custom(
+        width: usize,
+        height: usize,
+        pixel_format:
+        PixelFormat,
+        options: Options<'o>,
+    ) -> Settings<'o> {
         Self {
             width: width as u32,
             height: height as u32,
