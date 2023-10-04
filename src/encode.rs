@@ -412,8 +412,7 @@ impl<'o> Settings<'o> {
     pub fn for_h264_custom(
         width: usize,
         height: usize,
-        pixel_format:
-        PixelFormat,
+        pixel_format: PixelFormat,
         options: Options<'o>,
     ) -> Settings<'o> {
         Self {
