@@ -32,3 +32,6 @@ pub use time::{Aligned, Time};
 
 #[cfg(feature = "ndarray")]
 pub use frame::Frame;
+
+/// Re-export inner `ffmpeg` library.
+pub use ffmpeg_next as ffmpeg;
