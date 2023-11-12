@@ -1,4 +1,4 @@
-extern crate ffmpeg_next as ffmpeg;
+extern crate ffmpeg_the_third as ffmpeg;
 
 use ffmpeg::codec::packet::Packet as AvPacket;
 use ffmpeg::Rational as AvRational;

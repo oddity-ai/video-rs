@@ -35,4 +35,4 @@ pub use time::{Aligned, Time};
 pub use frame::Frame;
 
 /// Re-export inner `ffmpeg` library.
-pub use ffmpeg_next as ffmpeg;
+pub use ffmpeg_the_third as ffmpeg;

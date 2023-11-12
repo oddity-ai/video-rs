@@ -1,4 +1,4 @@
-extern crate ffmpeg_next as ffmpeg;
+extern crate ffmpeg_the_third as ffmpeg;
 
 #[cfg(feature = "ndarray")]
 use ndarray::Array3;
@@ -15,7 +15,7 @@ use ffmpeg::util::format::Pixel;
 
 use ffmpeg::ffi::*;
 
-/// This function is similar to the existing bindings in ffmpeg-next like `output` and `output_as`,
+/// This function is similar to the existing bindings in ffmpeg-the-third like `output` and `output_as`,
 /// but does not assume that it is opening a file-like context. Instead, it opens a raw output,
 /// without a file attached.
 ///

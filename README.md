@@ -24,7 +24,7 @@ media library without depending on ffmpeg.
 
 First, install the `ffmpeg` libraries. The `ffmpeg-next` project has
 [excellent instructions](https://github.com/zmwangx/rust-ffmpeg/wiki/Notes-on-building#dependencies)
-on this (`video-rs` depends on the `ffmpeg-next` crate).
+on this (`video-rs` depends on the `ffmpeg-the-third` crate).
 
 Then, add the following to your dependencies in `Cargo.toml`:
 

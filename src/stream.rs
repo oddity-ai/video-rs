@@ -1,4 +1,4 @@
-extern crate ffmpeg_next as ffmpeg;
+extern crate ffmpeg_the_third as ffmpeg;
 
 use ffmpeg::codec::Parameters as AvCodecParameters;
 use ffmpeg::{Error as AvError, Rational as AvRational};

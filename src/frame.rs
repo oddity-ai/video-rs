@@ -1,4 +1,4 @@
-extern crate ffmpeg_next as ffmpeg;
+extern crate ffmpeg_the_third as ffmpeg;
 
 use ffmpeg::util::format::Pixel as AvPixel;
 use ffmpeg::util::frame::Video as AvFrame;

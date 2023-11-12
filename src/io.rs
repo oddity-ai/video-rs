@@ -1,4 +1,4 @@
-extern crate ffmpeg_next as ffmpeg;
+extern crate ffmpeg_the_third as ffmpeg;
 
 use std::path::{Path, PathBuf};
 
@@ -401,7 +401,7 @@ pub enum Locator {
 }
 
 impl Locator {
-    /// Resolves the locator into a `PathBuf` for usage with `ffmpeg-next`.
+    /// Resolves the locator into a `PathBuf` for usage with `ffmpeg-the-third`.
     fn resolve(&self) -> &Path {
         match self {
             Locator::Path(path) => path.as_path(),

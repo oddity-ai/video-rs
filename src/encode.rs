@@ -1,4 +1,4 @@
-extern crate ffmpeg_next as ffmpeg;
+extern crate ffmpeg_the_third as ffmpeg;
 
 use ffmpeg::codec::codec::Codec as AvCodec;
 use ffmpeg::codec::encoder::video::Encoder as AvEncoder;
