@@ -19,6 +19,14 @@ use crate::{ffi::convert_frame_to_ndarray_rgb24, Frame, Time};
 
 type Result<T> = std::result::Result<T, Error>;
 
+/// Spcify how to select the stream
+pub enum StreamSelection {
+    /// Select the best possible stream
+    Best,
+    /// Select the stream manually
+    Index(usize),
+}
+
 /// Decode video files and streams.
 ///
 /// # Example
@@ -43,9 +51,12 @@ impl Decoder {
     /// # Arguments
     ///
     /// * `source` - Locator to file to decode.
-    pub fn new(source: &Locator) -> Result<Self> {
+    pub fn new(source: &Locator, selection: StreamSelection) -> Result<Self> {
         let reader = Reader::new(source)?;
-        let reader_stream_index = reader.best_video_stream_index()?;
+        let reader_stream_index = match selection {
+            StreamSelection::Index(index) => index,
+            StreamSelection::Best => reader.best_video_stream_index()?,
+        };
         Ok(Self {
             decoder: DecoderSplit::new(&reader, reader_stream_index, None)?,
             reader,
@@ -59,9 +70,16 @@ impl Decoder {
     ///
     /// * `source` - Locator to file to decode.
     /// * `options` - The input options.
-    pub fn new_with_options(source: &Locator, options: &Options) -> Result<Self> {
+    pub fn new_with_options(
+        source: &Locator,
+        selection: StreamSelection,
+        options: &Options,
+    ) -> Result<Self> {
         let reader = Reader::new_with_options(source, options)?;
-        let reader_stream_index = reader.best_video_stream_index()?;
+        let reader_stream_index = match selection {
+            StreamSelection::Index(index) => index,
+            StreamSelection::Best => reader.best_video_stream_index()?,
+        };
         Ok(Self {
             decoder: DecoderSplit::new(&reader, reader_stream_index, None)?,
             reader,
@@ -90,11 +108,15 @@ impl Decoder {
     /// ```
     pub fn new_with_options_and_resize(
         source: &Locator,
+        selection: StreamSelection,
         options: &Options,
         resize: Resize,
     ) -> Result<Self> {
         let reader = Reader::new_with_options(source, options)?;
-        let reader_stream_index = reader.best_video_stream_index()?;
+        let reader_stream_index = match selection {
+            StreamSelection::Index(index) => index,
+            StreamSelection::Best => reader.best_video_stream_index()?,
+        };
         Ok(Self {
             decoder: DecoderSplit::new(&reader, reader_stream_index, Some(resize))?,
             reader,
