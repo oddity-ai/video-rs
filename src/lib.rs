@@ -14,7 +14,7 @@ mod rtp;
 mod stream;
 mod time;
 
-pub use decode::{Decoder, DecoderSplit};
+pub use decode::{Decoder, DecoderBuilder, DecoderSplit};
 pub use encode::{Encoder, Settings as EncoderSettings};
 pub use error::Error;
 pub use extradata::{Pps, Sps};

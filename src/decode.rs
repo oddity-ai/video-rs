@@ -19,6 +19,43 @@ use crate::{ffi::convert_frame_to_ndarray_rgb24, Frame, Time};
 
 type Result<T> = std::result::Result<T, Error>;
 
+pub struct DecoderBuilder<'a> {
+    source: Locator,
+    reader_stream_index: Option<usize>,
+    reader_options: Option<Options<'a>>,
+}
+
+impl<'a> DecoderBuilder<'a> {
+    pub fn new(source: &Locator) -> Result<Self> {
+        Ok(Self {
+            source: source.clone(),
+            reader_stream_index: None,
+            reader_options: None,
+        })
+    }
+
+    pub fn build(self) -> Result<Decoder> {
+        let reader = match self.reader_options {
+            Some(options) => Reader::new_with_options(&self.source, &options)?,
+            None => Reader::new(&self.source)?,
+        };
+        let reader_stream_index = match self.reader_stream_index {
+            Some(index) => index,
+            None => reader.best_video_stream_index()?,
+        };
+
+        Ok(Decoder {
+            decoder: DecoderSplit::new(&reader, reader_stream_index, None)?,
+            reader,
+            reader_stream_index,
+        })
+    }
+
+    pub fn reader_options(&mut self, options: Options<'a>) {
+        self.reader_options = Some(options)
+    }
+}
+
 /// Decode video files and streams.
 ///
 /// # Example
