@@ -12,50 +12,43 @@ use crate::frame::FRAME_PIXEL_FORMAT;
 use crate::io::Reader;
 use crate::options::Options;
 use crate::packet::Packet;
-use crate::{Error, Locator, RawFrame, Resize};
+use crate::{Error, Locator, RawFrame, Resize, StreamInfo};
 
 #[cfg(feature = "ndarray")]
 use crate::{ffi::convert_frame_to_ndarray_rgb24, Frame, Time};
 
 type Result<T> = std::result::Result<T, Error>;
 
-pub struct DecoderBuilder<'a> {
-    source: Locator,
+pub struct DecoderBuilder {
+    reader: Reader,
     reader_stream_index: Option<usize>,
-    reader_options: Option<Options<'a>>,
     resize: Option<Resize>,
 }
 
-impl<'a> DecoderBuilder<'a> {
-    pub fn new(source: &Locator) -> Self {
-        Self {
-            source: source.clone(),
-            reader_stream_index: None,
-            reader_options: None,
-            resize: None,
-        }
-    }
-
-    pub fn build(self) -> Result<Decoder> {
-        let reader = match self.reader_options {
-            Some(options) => Reader::new_with_options(&self.source, &options)?,
-            None => Reader::new(&self.source)?,
+impl<'a> DecoderBuilder {
+    pub fn new(source: &Locator, reader_options: Option<Options>) -> Result<Self> {
+        let reader = match reader_options {
+            Some(options) => Reader::new_with_options(&source, &options)?,
+            None => Reader::new(&source)?,
         };
-        let reader_stream_index = match self.reader_stream_index {
-            Some(index) => index,
-            None => reader.best_video_stream_index()?,
-        };
-
-        Ok(Decoder {
-            decoder: DecoderSplit::new(&reader, reader_stream_index, self.resize)?,
+        Ok(Self {
             reader,
-            reader_stream_index,
+            reader_stream_index: None,
+            resize: None,
         })
     }
 
-    pub fn reader_options(mut self, options: Options<'a>) -> Self {
-        self.reader_options = Some(options);
-        self
+    pub fn build(self) -> Result<Decoder> {
+        let reader_stream_index = match self.reader_stream_index {
+            Some(index) => index,
+            None => self.reader.best_video_stream_index()?,
+        };
+
+        Ok(Decoder {
+            decoder: DecoderSplit::new(&self.reader, reader_stream_index, self.resize)?,
+            reader: self.reader,
+            reader_stream_index,
+        })
     }
 
     pub fn resize(mut self, resize: Resize) -> Self {
