@@ -23,6 +23,7 @@ pub struct DecoderBuilder<'a> {
     source: Locator,
     reader_stream_index: Option<usize>,
     reader_options: Option<Options<'a>>,
+    resize: Option<Resize>,
 }
 
 impl<'a> DecoderBuilder<'a> {
@@ -31,6 +32,7 @@ impl<'a> DecoderBuilder<'a> {
             source: source.clone(),
             reader_stream_index: None,
             reader_options: None,
+            resize: None,
         }
     }
 
@@ -45,7 +47,7 @@ impl<'a> DecoderBuilder<'a> {
         };
 
         Ok(Decoder {
-            decoder: DecoderSplit::new(&reader, reader_stream_index, None)?,
+            decoder: DecoderSplit::new(&reader, reader_stream_index, self.resize)?,
             reader,
             reader_stream_index,
         })
@@ -53,6 +55,11 @@ impl<'a> DecoderBuilder<'a> {
 
     pub fn reader_options(mut self, options: Options<'a>) -> Self {
         self.reader_options = Some(options);
+        self
+    }
+
+    pub fn resize(mut self, resize: Resize) -> Self {
+        self.resize = Some(resize);
         self
     }
 }
