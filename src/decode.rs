@@ -26,12 +26,12 @@ pub struct DecoderBuilder<'a> {
 }
 
 impl<'a> DecoderBuilder<'a> {
-    pub fn new(source: &Locator) -> Result<Self> {
-        Ok(Self {
+    pub fn new(source: &Locator) -> Self {
+        Self {
             source: source.clone(),
             reader_stream_index: None,
             reader_options: None,
-        })
+        }
     }
 
     pub fn build(self) -> Result<Decoder> {
@@ -51,8 +51,9 @@ impl<'a> DecoderBuilder<'a> {
         })
     }
 
-    pub fn reader_options(&mut self, options: Options<'a>) {
-        self.reader_options = Some(options)
+    pub fn reader_options(&mut self, options: Options<'a>) -> &mut Self {
+        self.reader_options = Some(options);
+        self
     }
 }
 
