@@ -51,7 +51,7 @@ impl<'a> DecoderBuilder<'a> {
         })
     }
 
-    pub fn reader_options(&mut self, options: Options<'a>) -> &mut Self {
+    pub fn reader_options(mut self, options: Options<'a>) -> Self {
         self.reader_options = Some(options);
         self
     }
