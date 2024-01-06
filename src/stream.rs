@@ -12,8 +12,8 @@ type Result<T> = std::result::Result<T, Error>;
 #[derive(Clone)]
 pub struct StreamInfo {
     pub index: usize,
-    codec_parameters: AvCodecParameters,
-    time_base: AvRational,
+    pub codec_parameters: AvCodecParameters,
+    pub time_base: AvRational,
 }
 
 impl StreamInfo {
