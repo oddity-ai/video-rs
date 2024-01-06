@@ -56,7 +56,7 @@ impl<'a> DecoderBuilder {
         self
     }
 
-    pub fn reader_stream_index<SelectorFn>(mut self, selector: SelectorFn) -> Result<Self>
+    pub fn reader_stream_index<SelectorFn>(mut self, selector: SelectorFn) -> Self
     where
         SelectorFn: FnOnce(Vec<StreamInfo>) -> usize,
     {
@@ -72,7 +72,7 @@ impl<'a> DecoderBuilder {
             })
             .collect();
         self.reader_stream_index = Some(selector(stream_infos));
-        Ok(self)
+        self
     }
 }
 
