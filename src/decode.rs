@@ -55,6 +55,25 @@ impl<'a> DecoderBuilder {
         self.resize = Some(resize);
         self
     }
+
+    pub fn reader_stream_index<SelectorFn>(mut self, selector: SelectorFn) -> Result<Self>
+    where
+        SelectorFn: FnOnce(Vec<StreamInfo>) -> usize,
+    {
+        let stream_infos = self
+            .reader
+            .input
+            .streams()
+            .enumerate()
+            .map(|(index, stream)| StreamInfo {
+                index,
+                codec_parameters: stream.parameters(),
+                time_base: stream.time_base(),
+            })
+            .collect();
+        self.reader_stream_index = Some(selector(stream_infos));
+        Ok(self)
+    }
 }
 
 /// Decode video files and streams.
