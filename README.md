@@ -29,14 +29,14 @@ on this (`video-rs` depends on the `ffmpeg-next` crate).
 Then, add the following to your dependencies in `Cargo.toml`:
 
 ```toml
-video-rs = "0.5"
+video-rs = "0.6"
 ```
 
 Use the `ndarray` feature to be able to use raw frames with the
 [`ndarray`](https://github.com/rust-ndarray/ndarray) crate:
 
 ```toml
-video-rs = { version = "0.5", features = ["ndarray"] }
+video-rs = { version = "0.6", features = ["ndarray"] }
 ```
 
 ## 📖 Examples

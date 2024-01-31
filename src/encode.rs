@@ -365,14 +365,14 @@ impl Drop for Encoder {
 }
 
 /// Holds a logical combination of encoder settings.
-pub struct Settings<'o> {
+pub struct Settings {
     width: u32,
     height: u32,
     pixel_format: AvPixel,
-    options: Options<'o>,
+    options: Options,
 }
 
-impl<'o> Settings<'o> {
+impl Settings {
     /// This is the assumed FPS for the encoder to use. Note that this does not need to be correct
     /// exactly.
     const FRAME_RATE: i32 = 30;
@@ -380,7 +380,7 @@ impl<'o> Settings<'o> {
     /// Create encoder settings for an H264 stream with YUV420p pixel format. This will encode to
     /// arguably the most widely compatible video file since H264 is a common codec and YUV420p is
     /// the most commonly used pixel format.
-    pub fn for_h264_yuv420p(width: usize, height: usize, realtime: bool) -> Settings<'o> {
+    pub fn for_h264_yuv420p(width: usize, height: usize, realtime: bool) -> Settings {
         let options = if realtime {
             Options::new_h264_realtime()
         } else {
@@ -413,8 +413,8 @@ impl<'o> Settings<'o> {
         width: usize,
         height: usize,
         pixel_format: PixelFormat,
-        options: Options<'o>,
-    ) -> Settings<'o> {
+        options: Options,
+    ) -> Settings {
         Self {
             width: width as u32,
             height: height as u32,
@@ -450,7 +450,7 @@ impl<'o> Settings<'o> {
     }
 
     /// Get encoder options.
-    fn options(&self) -> &Options<'o> {
+    fn options(&self) -> &Options {
         &self.options
     }
 }

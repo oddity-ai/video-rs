@@ -263,7 +263,7 @@ pub type Bufs = Vec<Buf>;
 /// Video writer that writes to a buffer.
 pub struct BufWriter {
     pub(crate) output: AvOutput,
-    options: Options<'static>,
+    options: Options,
 }
 
 impl BufWriter {
@@ -290,7 +290,7 @@ impl BufWriter {
     ///
     /// * `format` - Container format to use.
     /// * `options` - Options to pass on to ffmpeg.
-    pub fn new_with(format: &str, options: Options<'static>) -> Result<Self> {
+    pub fn new_with(format: &str, options: Options) -> Result<Self> {
         let output = ffi::output_raw(format)?;
 
         Ok(Self { output, options })
@@ -321,7 +321,7 @@ unsafe impl Sync for BufWriter {}
 /// Video writer that writes to a packetized buffer.
 pub struct PacketizedBufWriter {
     pub(crate) output: AvOutput,
-    options: Options<'static>,
+    options: Options,
     buffers: Bufs,
 }
 
@@ -354,7 +354,7 @@ impl PacketizedBufWriter {
     ///
     /// * `format` - Container format to use.
     /// * `options` - Options to pass on to ffmpeg.
-    pub fn new_with(format: &str, options: Options<'static>) -> Result<Self> {
+    pub fn new_with(format: &str, options: Options) -> Result<Self> {
         let output = ffi::output_raw(format)?;
 
         Ok(Self {

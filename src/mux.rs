@@ -90,10 +90,7 @@ impl Muxer<PacketizedBufWriter> {
     ///
     /// * `format` - Format to mux into.
     /// * `options` - Options for the writer.
-    pub fn new_to_packetized_buf_with_options(
-        format: &str,
-        options: Options<'static>,
-    ) -> Result<Self> {
+    pub fn new_to_packetized_buf_with_options(format: &str, options: Options) -> Result<Self> {
         Self::new(PacketizedBufWriter::new_with(format, options)?)
     }
 }
@@ -133,7 +130,7 @@ impl Muxer<BufWriter> {
     ///
     /// * `format` - Format to mux into.
     /// * `options` - Options for the writer.
-    pub fn new_to_buf_with_options(format: &str, options: Options<'static>) -> Result<Self> {
+    pub fn new_to_buf_with_options(format: &str, options: Options) -> Result<Self> {
         Self::new(BufWriter::new_with(format, options)?)
     }
 }

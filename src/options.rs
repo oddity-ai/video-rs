@@ -5,9 +5,10 @@ use std::collections::HashMap;
 use ffmpeg::Dictionary as AvDictionary;
 
 /// A wrapper type for ffmpeg options.
-pub struct Options<'a>(AvDictionary<'a>);
+#[derive(Clone)]
+pub struct Options(AvDictionary<'static>);
 
-impl Options<'_> {
+impl Options {
     /// Creates options such that ffmpeg will prefer TCP transport when reading RTSP stream (over
     /// the default UDP format).
     ///
@@ -73,36 +74,20 @@ impl Options<'_> {
         Self(opts)
     }
 
-    /// Create custom options from a `HashMap`.
-    ///
-    /// # Arguments
-    ///
-    /// * `from` - `HashMap` to make options out of.
-    pub fn new_from_hashmap(from: &HashMap<String, String>) -> Self {
-        let mut opts = AvDictionary::new();
-        for (k, v) in from {
-            opts.set(&k.clone(), &v.clone());
-        }
-
-        Self(opts)
-    }
-
     /// Convert back to ffmpeg native dictionary, which can be used with `ffmpeg_next` functions.
     pub(super) fn to_dict(&self) -> AvDictionary {
         self.0.clone()
     }
 }
 
-impl Default for Options<'_> {
+impl Default for Options {
     fn default() -> Self {
         Self(AvDictionary::new())
     }
 }
 
-impl From<HashMap<String, String>> for Options<'_> {
+impl From<HashMap<String, String>> for Options {
     /// Converts from `HashMap` to `Options`.
-    ///
-    /// Note: Calls `Options::new_from_hashamp` internally.
     ///
     /// # Arguments
     ///
@@ -120,9 +105,28 @@ impl From<HashMap<String, String>> for Options<'_> {
     /// let opts: Options = my_opts.into();
     /// ```
     fn from(item: HashMap<String, String>) -> Self {
-        Self::new_from_hashmap(&item)
+        let mut opts = AvDictionary::new();
+        for (k, v) in item {
+            opts.set(&k.clone(), &v.clone());
+        }
+
+        Self(opts)
     }
 }
 
-unsafe impl Send for Options<'_> {}
-unsafe impl Sync for Options<'_> {}
+impl From<Options> for HashMap<String, String> {
+    /// Converts from `Options` to `HashMap`.
+    ///
+    /// # Arguments
+    ///
+    /// * `item` - Item to convert from.
+    fn from(item: Options) -> Self {
+        item.0
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
+    }
+}
+
+unsafe impl Send for Options {}
+unsafe impl Sync for Options {}
