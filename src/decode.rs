@@ -12,10 +12,11 @@ use crate::frame::FRAME_PIXEL_FORMAT;
 use crate::io::Reader;
 use crate::options::Options;
 use crate::packet::Packet;
+use crate::time::Time;
 use crate::{Error, Locator, RawFrame, Resize};
 
 #[cfg(feature = "ndarray")]
-use crate::{ffi::convert_frame_to_ndarray_rgb24, Frame, Time};
+use crate::{ffi::convert_frame_to_ndarray_rgb24, Frame};
 
 type Result<T> = std::result::Result<T, Error>;
 
