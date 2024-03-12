@@ -108,6 +108,32 @@ impl Decoder {
         self.decoder.time_base()
     }
 
+    /// Duration of the decoder stream.
+    #[inline]
+    pub fn duration(&self) -> Result<Time> {
+        let reader_stream = self
+            .reader
+            .input
+            .stream(self.reader_stream_index)
+            .ok_or(AvError::StreamNotFound)?;
+        Ok(Time::new(
+            Some(reader_stream.duration()),
+            reader_stream.time_base(),
+        ))
+    }
+
+    /// Number of frames in the decoder stream.
+    #[inline]
+    pub fn frames(&self) -> Result<u64> {
+        Ok(self
+            .reader
+            .input
+            .stream(self.reader_stream_index)
+            .ok_or(AvError::StreamNotFound)?
+            .frames()
+            .max(0) as u64)
+    }
+
     /// Decode frames through iterator interface. This is similar to `decode` but it returns frames
     /// through an infinite iterator.
     ///
