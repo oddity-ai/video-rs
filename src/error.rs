@@ -13,6 +13,8 @@ pub enum Error {
     MissingCodecParameters,
     UnsupportedCodecParameterSets,
     InvalidResizeParameters,
+    UninitializedCodec,
+    UnsupportedCodecHardwareAccelerationDeviceType,
     BackendError(FfmpegError),
 }
 
@@ -26,6 +28,8 @@ impl std::error::Error for Error {
             Error::MissingCodecParameters => None,
             Error::UnsupportedCodecParameterSets => None,
             Error::InvalidResizeParameters => None,
+            Error::UninitializedCodec => None,
+            Error::UnsupportedCodecHardwareAccelerationDeviceType => None,
             Error::BackendError(ref internal) => Some(internal),
         }
     }
@@ -50,6 +54,12 @@ impl std::fmt::Display for Error {
             ),
             Error::InvalidResizeParameters => {
                 write!(f, "cannot resize frame into provided dimensions")
+            }
+            Error::UninitializedCodec => {
+                write!(f, "codec context is not initialized properly")
+            }
+            Error::UnsupportedCodecHardwareAccelerationDeviceType => {
+                write!(f, "codec does not supported hardware acceleration device")
             }
             Error::BackendError(ref internal) => internal.fmt(f),
         }

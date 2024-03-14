@@ -303,6 +303,21 @@ impl DecoderSplit {
 
         match self.decoder_receive_frame()? {
             Some(frame) => {
+                // TODO: if frame.format() == hw_pix_fmt
+                let frame = if frame.format() == todo!() {
+                    // Copy frame from hardware acceleration device to host.
+
+                    let mut frame_host = RawFrame::empty();
+                    // TODO: ffi this
+                    //     if ((ret = av_hwframe_transfer_data(sw_frame, frame, 0)) < 0) {
+                    //         fprintf(stderr, "Error transferring the data to system memory\n");
+                    //         goto fail;
+                    //     }
+                    frame_host
+                } else {
+                    frame
+                };
+
                 let mut frame_scaled = RawFrame::empty();
                 self.scaler
                     .run(&frame, &mut frame_scaled)
@@ -348,6 +363,10 @@ impl DecoderSplit {
         let mut decoder = AvContext::new();
         set_decoder_context_time_base(&mut decoder, reader_stream.time_base());
         decoder.set_parameters(reader_stream.parameters())?;
+
+        // TODO: let hardware_acceleration_context = crate::hwaccel::HardwareAccelerationContext::new(&mut decoder, todo!());
+        // TODO: self.hardare_acceleration_context = Some(todo!());
+
         let decoder = decoder.decoder().video()?;
         let decoder_time_base = decoder.time_base();
 
@@ -411,6 +430,9 @@ impl Drop for DecoderSplit {
                 }
             }
         }
+
+        // TODO: How are we going to do this?
+        // TODO: av_buffer_unref(&hw_device_ctx);
     }
 }
 
