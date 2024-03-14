@@ -51,6 +51,22 @@ pub fn hwdevice_list_available_device_types() -> Vec<HardwareAccelerationDeviceT
     hwdevice_types
 }
 
+pub fn hwdevice_transfer_frame(
+    target_frame: &mut ffmpeg::frame::Frame,
+    hwdevice_frame: &ffmpeg::frame::Frame,
+) -> Result<(), ffmpeg::error::Error> {
+    unsafe {
+        match ffmpeg::ffi::av_hwframe_transfer_data(
+            target_frame.as_mut_ptr(),
+            hwdevice_frame.as_ptr(),
+            0,
+        ) {
+            0 => Ok(()),
+            e => Err(ffmpeg::error::Error::from(e)),
+        }
+    }
+}
+
 pub fn codec_find_corresponding_hwaccel_pixfmt(
     codec: &ffmpeg::codec::codec::Codec,
     hwaccel_type: HardwareAccelerationDeviceType,

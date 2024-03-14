@@ -8,7 +8,9 @@ use ffmpeg::util::error::EAGAIN;
 use ffmpeg::{Error as AvError, Rational as AvRational};
 
 use crate::ffi::{copy_frame_props, set_decoder_context_time_base};
+use crate::ffi_hwaccel;
 use crate::frame::FRAME_PIXEL_FORMAT;
+use crate::hwaccel::{HardwareAccelerationContext, HardwareAccelerationDeviceType};
 use crate::io::Reader;
 use crate::options::Options;
 use crate::packet::Packet;
@@ -48,7 +50,7 @@ impl Decoder {
         let reader = Reader::new(source)?;
         let reader_stream_index = reader.best_video_stream_index()?;
         Ok(Self {
-            decoder: DecoderSplit::new(&reader, reader_stream_index, None)?,
+            decoder: DecoderSplit::new(&reader, reader_stream_index, None, None)?,
             reader,
             reader_stream_index,
         })
@@ -64,7 +66,7 @@ impl Decoder {
         let reader = Reader::new_with_options(source, options)?;
         let reader_stream_index = reader.best_video_stream_index()?;
         Ok(Self {
-            decoder: DecoderSplit::new(&reader, reader_stream_index, None)?,
+            decoder: DecoderSplit::new(&reader, reader_stream_index, None, None)?,
             reader,
             reader_stream_index,
         })
@@ -97,7 +99,7 @@ impl Decoder {
         let reader = Reader::new_with_options(source, options)?;
         let reader_stream_index = reader.best_video_stream_index()?;
         Ok(Self {
-            decoder: DecoderSplit::new(&reader, reader_stream_index, Some(resize))?,
+            decoder: DecoderSplit::new(&reader, reader_stream_index, Some(resize), None)?,
             reader,
             reader_stream_index,
         })
@@ -248,6 +250,7 @@ impl Decoder {
 pub struct DecoderSplit {
     decoder: AvDecoder,
     decoder_time_base: AvRational,
+    hwaccel_context: Option<HardwareAccelerationContext>,
     scaler: AvScaler,
     size: (u32, u32),
     size_out: (u32, u32),
@@ -303,19 +306,15 @@ impl DecoderSplit {
 
         match self.decoder_receive_frame()? {
             Some(frame) => {
-                // TODO: if frame.format() == hw_pix_fmt
-                let frame = if frame.format() == todo!() {
-                    // Copy frame from hardware acceleration device to host.
-
-                    let mut frame_host = RawFrame::empty();
-                    // TODO: ffi this
-                    //     if ((ret = av_hwframe_transfer_data(sw_frame, frame, 0)) < 0) {
-                    //         fprintf(stderr, "Error transferring the data to system memory\n");
-                    //         goto fail;
-                    //     }
-                    frame_host
-                } else {
-                    frame
+                let frame = match self.hwaccel_context.as_ref() {
+                    // If hardware acceleration is enabled on this decoder, we must download the
+                    // frame from the hwaccel device.
+                    Some(hwaccel_context) if hwaccel_context.format() == frame.format() => {
+                        let mut frame_downloaded = RawFrame::empty();
+                        ffi_hwaccel::hwdevice_transfer_frame(&mut frame_downloaded, &frame)?;
+                        frame_downloaded
+                    }
+                    _ => frame,
                 };
 
                 let mut frame_scaled = RawFrame::empty();
@@ -354,6 +353,7 @@ impl DecoderSplit {
         reader: &Reader,
         reader_stream_index: usize,
         resize: Option<Resize>,
+        hwaccel_device_type: Option<HardwareAccelerationDeviceType>,
     ) -> Result<Self> {
         let reader_stream = reader
             .input
@@ -364,8 +364,10 @@ impl DecoderSplit {
         set_decoder_context_time_base(&mut decoder, reader_stream.time_base());
         decoder.set_parameters(reader_stream.parameters())?;
 
-        // TODO: let hardware_acceleration_context = crate::hwaccel::HardwareAccelerationContext::new(&mut decoder, todo!());
-        // TODO: self.hardare_acceleration_context = Some(todo!());
+        let hwaccel_context = match hwaccel_device_type {
+            Some(device_type) => Some(HardwareAccelerationContext::new(&mut decoder, device_type)?),
+            None => None,
+        };
 
         let decoder = decoder.decoder().video()?;
         let decoder_time_base = decoder.time_base();
@@ -397,6 +399,7 @@ impl DecoderSplit {
         Ok(Self {
             decoder,
             decoder_time_base,
+            hwaccel_context,
             scaler,
             size,
             size_out,
@@ -430,9 +433,6 @@ impl Drop for DecoderSplit {
                 }
             }
         }
-
-        // TODO: How are we going to do this?
-        // TODO: av_buffer_unref(&hw_device_ctx);
     }
 }
 

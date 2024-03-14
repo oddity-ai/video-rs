@@ -6,8 +6,8 @@ use crate::ffi_hwaccel;
 type Result<T> = std::result::Result<T, Error>;
 
 pub struct HardwareAccelerationContext {
-    hardware_device_context: ffi_hwaccel::HardwareDeviceContext,
     pixel_format: ffmpeg::util::format::Pixel,
+    _hardware_device_context: ffi_hwaccel::HardwareDeviceContext,
 }
 
 impl HardwareAccelerationContext {
@@ -26,9 +26,13 @@ impl HardwareAccelerationContext {
         ffi_hwaccel::codec_context_hwaccel_set_hw_device_ctx(decoder, &hardware_device_context);
 
         Ok(HardwareAccelerationContext {
-            hardware_device_context,
             pixel_format,
+            _hardware_device_context: hardware_device_context,
         })
+    }
+
+    pub fn format(&self) -> ffmpeg::util::format::Pixel {
+        self.pixel_format
     }
 }
 
