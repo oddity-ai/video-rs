@@ -50,7 +50,12 @@ impl Decoder {
         let reader = Reader::new(source)?;
         let reader_stream_index = reader.best_video_stream_index()?;
         Ok(Self {
-            decoder: DecoderSplit::new(&reader, reader_stream_index, None, None)?,
+            decoder: DecoderSplit::new(
+                &reader,
+                reader_stream_index,
+                None,
+                Some(HardwareAccelerationDeviceType::Cuda), // TODO: TEMP
+            )?,
             reader,
             reader_stream_index,
         })
@@ -372,6 +377,11 @@ impl DecoderSplit {
         let decoder = decoder.decoder().video()?;
         let decoder_time_base = decoder.time_base();
 
+        let format = hwaccel_context
+            .as_ref()
+            .map(|hwaccel_context| hwaccel_context.format())
+            .unwrap_or(decoder.format());
+
         let (resize_width, resize_height) = match resize {
             Some(resize) => resize
                 .compute_for((decoder.width(), decoder.height()))
@@ -379,12 +389,12 @@ impl DecoderSplit {
             None => (decoder.width(), decoder.height()),
         };
 
-        if decoder.format() == AvPixel::None || decoder.width() == 0 || decoder.height() == 0 {
+        if format == AvPixel::None || decoder.width() == 0 || decoder.height() == 0 {
             return Err(Error::MissingCodecParameters);
         }
 
         let scaler = AvScaler::get(
-            decoder.format(),
+            format,
             decoder.width(),
             decoder.height(),
             FRAME_PIXEL_FORMAT,
@@ -392,6 +402,7 @@ impl DecoderSplit {
             resize_height,
             AvScalerFlags::AREA,
         )?;
+        dbg!(format); // TODO
 
         let size = (decoder.width(), decoder.height());
         let size_out = (resize_width, resize_height);

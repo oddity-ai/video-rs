@@ -15,7 +15,7 @@ impl HardwareAccelerationContext {
         decoder: &mut ffmpeg::codec::Context,
         device_type: HardwareAccelerationDeviceType,
     ) -> Result<Self> {
-        let codec = decoder.codec().ok_or(Error::UninitializedCodec)?;
+        let codec = ffmpeg::codec::decoder::find(decoder.id()).ok_or(Error::UninitializedCodec)?;
         let pixel_format =
             ffi_hwaccel::codec_find_corresponding_hwaccel_pixfmt(&codec, device_type)
                 .ok_or(Error::UnsupportedCodecHardwareAccelerationDeviceType)?;
@@ -41,6 +41,7 @@ pub enum HardwareAccelerationDeviceType {
     /// Video Decode and Presentation API for Unix (VDPAU)
     Vdpau,
     /// NVIDIA CUDA
+    /// TODO: Does not work due to scaler not converting from CUDA -> RGB
     Cuda,
     /// Video Acceleration API (VA-API)
     VaApi,
