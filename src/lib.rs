@@ -24,7 +24,10 @@ pub use frame::PixelFormat;
 pub use frame::RawFrame;
 pub use hwaccel::HardwareAccelerationDeviceType;
 pub use init::init;
-pub use io::{Buf, Reader, Write, Writer};
+pub use io::{
+    Buf, BufWriter, BufWriterBuilder, PacketizedBufWriter, PacketizedBufWriterBuilder, Reader,
+    ReaderBuilder, Write, Writer, WriterBuilder,
+};
 pub use io::{Locator, Url};
 pub use mux::{BufMuxer, FileMuxer, PacketizedBufMuxer};
 pub use options::Options;

@@ -17,6 +17,33 @@ type Result<T> = std::result::Result<T, Error>;
 /// Re-export `url::Url` since it is an input type for callers of the API.
 pub use url::Url;
 
+/// TODO
+pub struct ReaderBuilder<'a> {
+    source: &'a Locator,
+    options: Option<&'a Options>,
+}
+
+impl<'a> ReaderBuilder<'a> {
+    /// TODO
+    pub fn new(source: &'a Locator) -> Self {
+        Self {
+            source,
+            options: None,
+        }
+    }
+
+    /// TODO
+    pub fn with_options(&mut self, options: &'a Options) -> &mut Self {
+        self.options = Some(options);
+        self
+    }
+
+    /// TODO
+    pub fn build(self) -> Result<Reader> {
+        todo!()
+    }
+}
+
 /// Video reader that can read from files.
 pub struct Reader {
     pub source: Locator,
@@ -157,6 +184,95 @@ unsafe impl Sync for Reader {}
 
 /// Any type that implements this can write video packets.
 pub trait Write: private::Write + private::Output {}
+
+/// TODO
+pub struct WriterBuilder<'a> {
+    destination: &'a Locator,
+    format: Option<&'a str>,
+    options: Option<&'a Options>,
+}
+
+impl<'a> WriterBuilder<'a> {
+    /// TODO
+    pub fn new(destination: &'a Locator) -> Self {
+        Self {
+            destination,
+            format: None,
+            options: None,
+        }
+    }
+
+    /// TODO
+    pub fn format(mut self, format: &'a str) -> Self {
+        self.format = Some(format);
+        self
+    }
+
+    /// TODO
+    pub fn options(mut self, options: &'a Options) -> Self {
+        self.options = Some(options);
+        self
+    }
+
+    /// TODO
+    pub fn build(self) -> Result<Writer> {
+        todo!()
+    }
+}
+
+/// TODO
+pub struct BufWriterBuilder<'a> {
+    format: &'a str,
+    options: Option<&'a Options>,
+}
+
+impl<'a> BufWriterBuilder<'a> {
+    /// TODO
+    pub fn new(format: &'a str) -> Self {
+        Self {
+            format,
+            options: None,
+        }
+    }
+
+    /// TODO
+    pub fn options(mut self, options: &'a Options) -> Self {
+        self.options = Some(options);
+        self
+    }
+
+    /// TODO
+    pub fn build(self) -> Result<BufWriter> {
+        todo!()
+    }
+}
+
+/// TODO
+pub struct PacketizedBufWriterBuilder<'a> {
+    format: &'a str,
+    options: Option<&'a Options>,
+}
+
+impl<'a> PacketizedBufWriterBuilder<'a> {
+    /// TODO
+    pub fn new(format: &'a str) -> Self {
+        Self {
+            format,
+            options: None,
+        }
+    }
+
+    /// TODO
+    pub fn options(mut self, options: &'a Options) -> Self {
+        self.options = Some(options);
+        self
+    }
+
+    /// TODO
+    pub fn build(self) -> Result<PacketizedBufWriter> {
+        todo!()
+    }
+}
 
 /// File writer for video files.
 pub struct Writer {

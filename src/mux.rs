@@ -57,7 +57,7 @@ impl Muxer<Writer> {
     /// muxer.finish().unwrap();
     /// ```
     pub fn new_to_file(dest: &Locator) -> Result<Self> {
-        Self::new(Writer::new(dest)?)
+        Self::from(Writer::new(dest)?)
     }
 
     /// Create a muxer that writes to a file and allows for specifying ffmpeg options for the
@@ -68,7 +68,7 @@ impl Muxer<Writer> {
     /// * `dest` - Locator to mux to, like a file or URL.
     /// * `format` - Format to mux into.
     pub fn new_to_file_with_format(dest: &Locator, format: &str) -> Result<Self> {
-        Self::new(Writer::new_with_format(dest, format)?)
+        Self::from(Writer::new_with_format(dest, format)?)
     }
 }
 
@@ -80,7 +80,7 @@ impl Muxer<PacketizedBufWriter> {
     ///
     /// * `format` - Format to mux into.
     pub fn new_to_packetized_buf(format: &str) -> Result<Self> {
-        Self::new(PacketizedBufWriter::new(format)?)
+        Self::from(PacketizedBufWriter::new(format)?)
     }
 
     /// Create a muxer that writes to a packetized buffer and allows for specifying ffmpeg options
@@ -91,7 +91,7 @@ impl Muxer<PacketizedBufWriter> {
     /// * `format` - Format to mux into.
     /// * `options` - Options for the writer.
     pub fn new_to_packetized_buf_with_options(format: &str, options: Options) -> Result<Self> {
-        Self::new(PacketizedBufWriter::new_with(format, options)?)
+        Self::from(PacketizedBufWriter::new_with(format, options)?)
     }
 }
 
@@ -120,7 +120,7 @@ impl Muxer<BufWriter> {
     /// muxer.finish()?;
     /// ```
     pub fn new_to_buf(format: &str) -> Result<Self> {
-        Self::new(BufWriter::new(format)?)
+        Self::from(BufWriter::new(format)?)
     }
 
     /// Create a muxer that writes to a buffer and allows for specifying ffmpeg options for the
@@ -131,7 +131,7 @@ impl Muxer<BufWriter> {
     /// * `format` - Format to mux into.
     /// * `options` - Options for the writer.
     pub fn new_to_buf_with_options(format: &str, options: Options) -> Result<Self> {
-        Self::new(BufWriter::new_with(format, options)?)
+        Self::from(BufWriter::new_with(format, options)?)
     }
 }
 
@@ -145,9 +145,9 @@ impl<W: Write> Muxer<W> {
     /// # Examples
     ///
     /// ```ignore
-    /// let muxer = Muxer::new(BufWriter::new("mp4").unwrap()).unwrap();
+    /// let muxer = Muxer::from(BufWriter::new("mp4").unwrap()).unwrap();
     /// ```
-    fn new(writer: W) -> Result<Self> {
+    fn from(writer: W) -> Result<Self> {
         Ok(Self {
             writer,
             mapping: HashMap::new(),
@@ -157,6 +157,7 @@ impl<W: Write> Muxer<W> {
         })
     }
 
+    // TODO
     /// Turn the muxer into an interleaved version, that automatically reorders packets when
     /// necessary.
     pub fn interleaved(mut self) -> Self {
@@ -164,6 +165,7 @@ impl<W: Write> Muxer<W> {
         self
     }
 
+    // TODO
     /// Add an output stream to the muxer based on an input stream from a reader. Any packets
     /// provided to `mux` from the given input stream will be muxed to the corresponding output
     /// stream.
@@ -193,6 +195,7 @@ impl<W: Write> Muxer<W> {
         Ok(self)
     }
 
+    // TODO
     /// Add output streams from reader to muxer. This will add all streams in the reader and
     /// duplicate them in the muxer. After calling this, it is safe to mux all packets from the
     /// provided reader.
@@ -248,6 +251,17 @@ impl<W: Write> Muxer<W> {
         }
     }
 
+    /// Signal to the muxer that writing has finished. This will cause a trailer to be written if
+    /// the container format has one.
+    pub fn finish(&mut self) -> Result<Option<W::Out>> {
+        if self.have_written_header && !self.have_written_trailer {
+            self.have_written_trailer = true;
+            self.writer.write_trailer().map(Some)
+        } else {
+            Ok(None)
+        }
+    }
+
     /// Get parameter sets corresponding to each internal stream. The parameter set contains one SPS
     /// (Sequence Parameter Set) and zero or more PPSs (Picture Parameter Sets).
     ///
@@ -266,17 +280,6 @@ impl<W: Write> Muxer<W> {
                 }
             })
             .collect::<Vec<_>>()
-    }
-
-    /// Signal to the muxer that writing has finished. This will cause a trailer to be written if
-    /// the container format has one.
-    pub fn finish(&mut self) -> Result<Option<W::Out>> {
-        if self.have_written_header && !self.have_written_trailer {
-            self.have_written_trailer = true;
-            self.writer.write_trailer().map(Some)
-        } else {
-            Ok(None)
-        }
     }
 }
 
