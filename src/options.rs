@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use ffmpeg::Dictionary as AvDictionary;
 
 /// A wrapper type for ffmpeg options.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Options(AvDictionary<'static>);
 
 impl Options {
@@ -13,7 +13,7 @@ impl Options {
     /// the default UDP format).
     ///
     /// This sets the `rtsp_transport` to `tcp` in ffmpeg options.
-    pub fn new_with_rtsp_transport_tcp() -> Self {
+    pub fn preset_rtsp_transport_tcp() -> Self {
         let mut opts = AvDictionary::new();
         opts.set("rtsp_transport", "tcp");
 
@@ -26,7 +26,7 @@ impl Options {
     ///
     /// This sets the `rtsp_transport` to `tcp` in ffmpeg options, it also sets `rw_timeout` to
     /// `4000000` and `stimeout` to `4000000`.
-    pub fn new_with_rtsp_transport_tcp_and_sane_timeouts() -> Self {
+    pub fn preset_rtsp_transport_tcp_and_sane_timeouts() -> Self {
         let mut opts = AvDictionary::new();
         opts.set("rtsp_transport", "tcp");
         // These can't be too low because ffmpeg takes its sweet time when connecting to RTSP
@@ -43,7 +43,7 @@ impl Options {
     /// This modifies the `movflags` key to supported fragmented output. The muxer output will not
     /// have a header and each packet contains enough metadata to be streamed without the header.
     /// Muxer output should be compatiable with MSE.
-    pub fn new_with_fragmented_mov() -> Self {
+    pub fn preset_fragmented_mov() -> Self {
         let mut opts = AvDictionary::new();
         opts.set(
             "movflags",
@@ -54,7 +54,7 @@ impl Options {
     }
 
     /// Default options for a H264 encoder.
-    pub fn new_h264() -> Self {
+    pub fn preset_h264() -> Self {
         let mut opts = AvDictionary::new();
         // Set H264 encoder to the medium preset.
         opts.set("preset", "medium");
@@ -64,7 +64,7 @@ impl Options {
 
     /// Options for a H264 encoder that are tuned for low-latency encoding such as for real-time
     /// streaming.
-    pub fn new_h264_realtime() -> Self {
+    pub fn preset_h264_realtime() -> Self {
         let mut opts = AvDictionary::new();
         // Set H264 encoder to the medium preset.
         opts.set("preset", "medium");

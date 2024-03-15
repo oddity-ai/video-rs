@@ -285,6 +285,7 @@ unsafe impl<W: Write> Sync for Muxer<W> {}
 
 /// Internal structure that holds the stream index and the time base of the source packet for
 /// rescaling.
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct StreamDescription {
     index: usize,
     source_time_base: AvRational,

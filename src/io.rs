@@ -394,7 +394,8 @@ unsafe impl Sync for PacketizedBufWriter {}
 
 /// Wrapper type for any valid video source. Currently, this could be a URI, file path or any other
 /// input the backend will accept. Later, we might add some scaffolding to have stricter typing.
-#[derive(Clone)]
+// TODO: Can do better on this API.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Locator {
     Path(PathBuf),
     Url(Url),
