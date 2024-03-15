@@ -256,7 +256,7 @@ pub struct DecoderSplit {
     decoder: AvDecoder,
     decoder_time_base: AvRational,
     hwaccel_context: Option<HardwareAccelerationContext>,
-    scaler: AvScaler,
+    scaler: Option<AvScaler>,
     size: (u32, u32),
     size_out: (u32, u32),
 }
@@ -312,24 +312,28 @@ impl DecoderSplit {
         match self.decoder_receive_frame()? {
             Some(frame) => {
                 let frame = match self.hwaccel_context.as_ref() {
-                    // If hardware acceleration is enabled on this decoder, we must download the
-                    // frame from the hwaccel device.
                     Some(hwaccel_context) if hwaccel_context.format() == frame.format() => {
                         let mut frame_downloaded = RawFrame::empty();
+                        frame_downloaded.set_format(FRAME_PIXEL_FORMAT);
                         ffi_hwaccel::hwdevice_transfer_frame(&mut frame_downloaded, &frame)?;
                         frame_downloaded
                     }
                     _ => frame,
                 };
 
-                let mut frame_scaled = RawFrame::empty();
-                self.scaler
-                    .run(&frame, &mut frame_scaled)
-                    .map_err(Error::BackendError)?;
+                let frame = match self.scaler.as_mut() {
+                    Some(scaler) => {
+                        let mut frame_scaled = RawFrame::empty();
+                        scaler
+                            .run(&frame, &mut frame_scaled)
+                            .map_err(Error::BackendError)?;
+                        copy_frame_props(&frame, &mut frame_scaled);
+                        frame_scaled
+                    }
+                    _ => frame,
+                };
 
-                copy_frame_props(&frame, &mut frame_scaled);
-
-                Ok(Some(frame_scaled))
+                Ok(Some(frame))
             }
             None => Ok(None),
         }
@@ -377,10 +381,9 @@ impl DecoderSplit {
         let decoder = decoder.decoder().video()?;
         let decoder_time_base = decoder.time_base();
 
-        let format = hwaccel_context
-            .as_ref()
-            .map(|hwaccel_context| hwaccel_context.format())
-            .unwrap_or(decoder.format());
+        if decoder.format() == AvPixel::None || decoder.width() == 0 || decoder.height() == 0 {
+            return Err(Error::MissingCodecParameters);
+        }
 
         let (resize_width, resize_height) = match resize {
             Some(resize) => resize
@@ -389,20 +392,31 @@ impl DecoderSplit {
             None => (decoder.width(), decoder.height()),
         };
 
-        if format == AvPixel::None || decoder.width() == 0 || decoder.height() == 0 {
-            return Err(Error::MissingCodecParameters);
-        }
+        let scaler_input_format = if hwaccel_context.is_some() {
+            // If hardware acceleration is enabled, we pre-converted the pixel format when
+            // downloading the frame from the device.
+            FRAME_PIXEL_FORMAT
+        } else {
+            decoder.format()
+        };
 
-        let scaler = AvScaler::get(
-            format,
-            decoder.width(),
-            decoder.height(),
-            FRAME_PIXEL_FORMAT,
-            resize_width,
-            resize_height,
-            AvScalerFlags::AREA,
-        )?;
-        dbg!(format); // TODO
+        let is_scaler_needed = !(scaler_input_format == FRAME_PIXEL_FORMAT
+            && decoder.width() == resize_width
+            && decoder.height() == resize_height);
+
+        let scaler = if is_scaler_needed {
+            Some(AvScaler::get(
+                scaler_input_format,
+                decoder.width(),
+                decoder.height(),
+                FRAME_PIXEL_FORMAT,
+                resize_width,
+                resize_height,
+                AvScalerFlags::AREA,
+            )?)
+        } else {
+            None
+        };
 
         let size = (decoder.width(), decoder.height());
         let size_out = (resize_width, resize_height);
