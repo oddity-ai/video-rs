@@ -7,24 +7,25 @@ use ffmpeg::software::scaling::{context::Context as AvScaler, flag::Flags as AvS
 use ffmpeg::util::error::EAGAIN;
 use ffmpeg::{Error as AvError, Rational as AvRational};
 
-use crate::ffi::{copy_frame_props, set_decoder_context_time_base};
+use crate::error::Error;
+use crate::ffi;
 use crate::ffi_hwaccel;
-use crate::frame::FRAME_PIXEL_FORMAT;
+#[cfg(feature = "ndarray")]
+use crate::frame::Frame;
+use crate::frame::{RawFrame, FRAME_PIXEL_FORMAT};
 use crate::hwaccel::{HardwareAccelerationContext, HardwareAccelerationDeviceType};
 use crate::io::Reader;
+use crate::location::Location;
 use crate::options::Options;
 use crate::packet::Packet;
+use crate::resize::Resize;
 use crate::time::Time;
-use crate::{Error, Locator, RawFrame, Resize};
-
-#[cfg(feature = "ndarray")]
-use crate::{ffi::convert_frame_to_ndarray_rgb24, Frame};
 
 type Result<T> = std::result::Result<T, Error>;
 
 /// Builds a [`Decoder`].
 pub struct DecoderBuilder<'a> {
-    source: &'a Locator,
+    source: &'a Location,
     options: Option<&'a Options>,
     resize: Option<Resize>,
     hardware_acceleration_device_type: Option<HardwareAccelerationDeviceType>,
@@ -34,7 +35,7 @@ impl<'a> DecoderBuilder<'a> {
     /// Create a decoder with the specified source.
     ///
     /// * `source` - Source to decode.
-    pub fn new(source: &'a Locator) -> Self {
+    pub fn new(source: &'a Location) -> Self {
         Self {
             source,
             options: None,
@@ -106,6 +107,16 @@ pub struct Decoder {
 }
 
 impl Decoder {
+    /// Create a decoder to decode the specified source.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - Source to decode.
+    #[inline]
+    pub fn new(source: &Location) -> Result<Self> {
+        DecoderBuilder::new(source).build()
+    }
+
     /// Get decoder time base.
     #[inline]
     pub fn time_base(&self) -> AvRational {
@@ -276,7 +287,7 @@ impl DecoderSplit {
             .ok_or(AvError::StreamNotFound)?;
 
         let mut decoder = AvContext::new();
-        set_decoder_context_time_base(&mut decoder, reader_stream.time_base());
+        ffi::set_decoder_context_time_base(&mut decoder, reader_stream.time_base());
         decoder.set_parameters(reader_stream.parameters())?;
 
         let hwaccel_context = match hwaccel_device_type {
@@ -360,7 +371,7 @@ impl DecoderSplit {
                 // encoder will use when encoding for the `PTS` field.
                 let timestamp = Time::new(Some(frame.packet().dts), self.decoder_time_base);
                 let frame =
-                    convert_frame_to_ndarray_rgb24(&mut frame).map_err(Error::BackendError)?;
+                    ffi::convert_frame_to_ndarray_rgb24(&mut frame).map_err(Error::BackendError)?;
 
                 Ok(Some((timestamp, frame)))
             }
@@ -402,7 +413,7 @@ impl DecoderSplit {
                         scaler
                             .run(&frame, &mut frame_scaled)
                             .map_err(Error::BackendError)?;
-                        copy_frame_props(&frame, &mut frame_scaled);
+                        ffi::copy_frame_props(&frame, &mut frame_scaled);
                         frame_scaled
                     }
                     _ => frame,

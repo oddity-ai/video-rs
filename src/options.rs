@@ -93,7 +93,7 @@ impl From<HashMap<String, String>> for Options {
     ///
     /// * `item` - Item to convert from.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```ignore
     /// let my_opts = HashMap::new();

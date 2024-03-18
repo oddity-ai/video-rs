@@ -3,7 +3,8 @@ extern crate ffmpeg_next as ffmpeg;
 use ffmpeg::codec::Parameters as AvCodecParameters;
 use ffmpeg::{Error as AvError, Rational as AvRational};
 
-use crate::{io::Reader, Error};
+use crate::error::Error;
+use crate::io::Reader;
 
 type Result<T> = std::result::Result<T, Error>;
 

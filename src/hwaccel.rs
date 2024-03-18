@@ -5,13 +5,13 @@ use crate::ffi_hwaccel;
 
 type Result<T> = std::result::Result<T, Error>;
 
-pub struct HardwareAccelerationContext {
+pub(crate) struct HardwareAccelerationContext {
     pixel_format: ffmpeg::util::format::Pixel,
     _hardware_device_context: ffi_hwaccel::HardwareDeviceContext,
 }
 
 impl HardwareAccelerationContext {
-    pub fn new(
+    pub(crate) fn new(
         decoder: &mut ffmpeg::codec::Context,
         device_type: HardwareAccelerationDeviceType,
     ) -> Result<Self> {
@@ -31,7 +31,7 @@ impl HardwareAccelerationContext {
         })
     }
 
-    pub fn format(&self) -> ffmpeg::util::format::Pixel {
+    pub(crate) fn format(&self) -> ffmpeg::util::format::Pixel {
         self.pixel_format
     }
 }
@@ -41,7 +41,6 @@ pub enum HardwareAccelerationDeviceType {
     /// Video Decode and Presentation API for Unix (VDPAU)
     Vdpau,
     /// NVIDIA CUDA
-    /// TODO: Does not work due to scaler not converting from CUDA -> RGB
     Cuda,
     /// Video Acceleration API (VA-API)
     VaApi,

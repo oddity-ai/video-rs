@@ -26,7 +26,7 @@ use ffmpeg::ffi::*;
 ///
 /// * `format` - String to indicate the container format, like "mp4".
 ///
-/// # Examples
+/// # Example
 ///
 /// ```ignore
 /// let output = ffi::output_raw("mp4");

@@ -1,52 +1,86 @@
 extern crate ffmpeg_next as ffmpeg;
 
-use std::path::{Path, PathBuf};
-
 use ffmpeg::codec::packet::Packet as AvPacket;
 use ffmpeg::ffi::AV_TIME_BASE_Q;
 use ffmpeg::format::context::{Input as AvInput, Output as AvOutput};
 use ffmpeg::media::Type as AvMediaType;
 use ffmpeg::Error as AvError;
 
+use crate::error::Error;
 use crate::ffi;
+use crate::location::Location;
 use crate::options::Options;
-use crate::{Error, Packet, StreamInfo};
+use crate::packet::Packet;
+use crate::stream::StreamInfo;
 
 type Result<T> = std::result::Result<T, Error>;
 
-/// Re-export `url::Url` since it is an input type for callers of the API.
-pub use url::Url;
-
-/// TODO
+/// Builds a [`Reader`].
+///
+/// # Example
+///
+/// ```ignore
+/// let mut options = HashMap::new();
+/// options.insert(
+///     "rtsp_transport".to_string(),
+///     "tcp".to_string(),
+/// );
+///
+/// let mut reader = ReaderBuilder::new(
+///     &PathBuf::from("my_file.mp4").into(),
+/// )
+/// .with_options(&options.into())
+/// .unwrap();
+/// ```
 pub struct ReaderBuilder<'a> {
-    source: &'a Locator,
+    source: Location,
     options: Option<&'a Options>,
 }
 
 impl<'a> ReaderBuilder<'a> {
-    /// TODO
-    pub fn new(source: &'a Locator) -> Self {
+    /// Create a new reader with the specified locator.
+    ///
+    /// # Arguments
+    ///
+    /// * `source` - Source to read.
+    pub fn new(source: impl Into<Location>) -> Self {
         Self {
-            source,
+            source: source.into(),
             options: None,
         }
     }
 
-    /// TODO
+    /// Specify options for the backend.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Options to pass on to input.
     pub fn with_options(&mut self, options: &'a Options) -> &mut Self {
         self.options = Some(options);
         self
     }
 
-    /// TODO
+    /// Build [`Reader`].
     pub fn build(self) -> Result<Reader> {
-        todo!()
+        match self.options {
+            None => Ok(Reader {
+                input: ffmpeg::format::input(&self.source.as_path())?,
+                source: self.source,
+            }),
+            Some(options) => Ok(Reader {
+                input: ffmpeg::format::input_with_dictionary(
+                    &self.source.as_path(),
+                    options.to_dict(),
+                )?,
+                source: self.source,
+            }),
+        }
     }
 }
 
 /// Video reader that can read from files.
 pub struct Reader {
-    pub source: Locator,
+    pub source: Location,
     pub input: AvInput,
 }
 
@@ -56,44 +90,9 @@ impl Reader {
     /// # Arguments
     ///
     /// * `source` - Source to read from.
-    pub fn new(source: &Locator) -> Result<Self> {
-        let input = ffmpeg::format::input(&source.resolve())?;
-
-        Ok(Self {
-            source: source.clone(),
-            input,
-        })
-    }
-
-    /// Create a new video file reader with options for the backend.
-    ///
-    /// # Arguments
-    ///
-    /// * `source` - Source to read from.
-    /// * `options` - Options to pass on.
-    ///
-    /// # Examples
-    ///
-    /// ```ignore
-    /// let mut options = HashMap::new();
-    /// options.insert(
-    ///     "rtsp_transport".to_string(),
-    ///     "tcp".to_string(),
-    /// );
-    ///
-    /// let mut reader = Reader::new(
-    ///     &PathBuf::from("my_file.mp4").into(),
-    ///     &options.into()
-    /// )
-    /// .unwrap();
-    /// ```
-    pub fn new_with_options(source: &Locator, options: &Options) -> Result<Self> {
-        let input = ffmpeg::format::input_with_dictionary(&source.resolve(), options.to_dict())?;
-
-        Ok(Self {
-            source: source.clone(),
-            input,
-        })
+    #[inline]
+    pub fn new<'a>(source: impl Into<Location>) -> Result<Self> {
+        ReaderBuilder::new(source).build()
     }
 
     /// Read a single packet from the source video file.
@@ -102,9 +101,9 @@ impl Reader {
     ///
     /// * `stream_index` - Index of stream to read from.
     ///
-    /// # Examples
+    /// # Example
     ///
-    /// Read a single packet.
+    /// Read a single packet:
     ///
     /// ```ignore
     /// let mut reader = Reader(&PathBuf::from("my_video.mp4").into()).unwrap();
@@ -185,98 +184,98 @@ unsafe impl Sync for Reader {}
 /// Any type that implements this can write video packets.
 pub trait Write: private::Write + private::Output {}
 
-/// TODO
+/// Build a [`Writer`].
 pub struct WriterBuilder<'a> {
-    destination: &'a Locator,
+    destination: Location,
     format: Option<&'a str>,
     options: Option<&'a Options>,
 }
 
 impl<'a> WriterBuilder<'a> {
-    /// TODO
-    pub fn new(destination: &'a Locator) -> Self {
+    /// Create a new writer with the specified destination.
+    ///
+    /// # Arguments
+    ///
+    /// * `destination` - Destination to write to.
+    pub fn new(destination: impl Into<Location>) -> Self {
         Self {
-            destination,
+            destination: destination.into(),
             format: None,
             options: None,
         }
     }
 
-    /// TODO
-    pub fn format(mut self, format: &'a str) -> Self {
+    /// Specify a custom format for the writer.
+    ///
+    /// # Arguments
+    ///
+    /// * `format` - Container format to use.
+    pub fn with_format(&mut self, format: &'a str) -> &mut Self {
         self.format = Some(format);
         self
     }
 
-    /// TODO
-    pub fn options(mut self, options: &'a Options) -> Self {
+    /// Specify options for the backend.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Options to pass on to output.
+    pub fn with_options(&mut self, options: &'a Options) -> &mut Self {
         self.options = Some(options);
         self
     }
 
-    /// TODO
+    /// Build [`Writer`].
     pub fn build(self) -> Result<Writer> {
-        todo!()
-    }
-}
-
-/// TODO
-pub struct BufWriterBuilder<'a> {
-    format: &'a str,
-    options: Option<&'a Options>,
-}
-
-impl<'a> BufWriterBuilder<'a> {
-    /// TODO
-    pub fn new(format: &'a str) -> Self {
-        Self {
-            format,
-            options: None,
+        match (self.format, self.options) {
+            (None, None) => Ok(Writer {
+                destination: self.destination.into(),
+                output: ffmpeg::format::output(&self.destination.as_path())?,
+            }),
+            (Some(format), None) => Ok(Writer {
+                destination: self.destination.into(),
+                output: ffmpeg::format::output_as(&self.destination.as_path(), format)?,
+            }),
+            (None, Some(options)) => Ok(Writer {
+                destination: self.destination.into(),
+                output: ffmpeg::format::output_with(
+                    &self.destination.as_path(),
+                    options.to_dict(),
+                )?,
+            }),
+            (Some(format), Some(options)) => Ok(Writer {
+                destination: self.destination.into(),
+                output: ffmpeg::format::output_as_with(
+                    &self.destination.as_path(),
+                    format,
+                    options.to_dict(),
+                )?,
+            }),
         }
-    }
-
-    /// TODO
-    pub fn options(mut self, options: &'a Options) -> Self {
-        self.options = Some(options);
-        self
-    }
-
-    /// TODO
-    pub fn build(self) -> Result<BufWriter> {
-        todo!()
-    }
-}
-
-/// TODO
-pub struct PacketizedBufWriterBuilder<'a> {
-    format: &'a str,
-    options: Option<&'a Options>,
-}
-
-impl<'a> PacketizedBufWriterBuilder<'a> {
-    /// TODO
-    pub fn new(format: &'a str) -> Self {
-        Self {
-            format,
-            options: None,
-        }
-    }
-
-    /// TODO
-    pub fn options(mut self, options: &'a Options) -> Self {
-        self.options = Some(options);
-        self
-    }
-
-    /// TODO
-    pub fn build(self) -> Result<PacketizedBufWriter> {
-        todo!()
     }
 }
 
 /// File writer for video files.
+///
+/// # Example
+///
+/// Create a video writer that produces fragmented MP4:
+///
+/// ```ignore
+/// let mut options = HashMap::new();
+/// options.insert(
+///     "movflags".to_string(),
+///     "frag_keyframe+empty_moov".to_string(),
+/// );
+///
+/// let mut writer = WriterBuilder::new(
+///     &PathBuf::from("my_file.mp4").into(),
+/// )
+/// .with_options(&options.into())
+/// .unwrap();
+/// ```
 pub struct Writer {
-    pub dest: Locator,
+    pub destination: Location,
     pub(crate) output: AvOutput,
 }
 
@@ -286,82 +285,9 @@ impl Writer {
     /// # Arguments
     ///
     /// * `dest` - Where to write to.
-    pub fn new(dest: &Locator) -> Result<Self> {
-        let output = ffmpeg::format::output(&dest.resolve())?;
-
-        Ok(Self {
-            dest: dest.clone(),
-            output,
-        })
-    }
-
-    /// Create a new file writer for video files with a custom format specifier.
-    ///
-    /// # Arguments
-    ///
-    /// * `dest` - Where to write to.
-    /// * `format` - Container format to use.
-    pub fn new_with_format(dest: &Locator, format: &str) -> Result<Self> {
-        let output = ffmpeg::format::output_as(&dest.resolve(), format)?;
-
-        Ok(Self {
-            dest: dest.clone(),
-            output,
-        })
-    }
-
-    /// Create a new file writer for video files with custom options for the ffmpeg backend.
-    ///
-    /// # Arguments
-    ///
-    /// * `dest` - Where to write to.
-    /// * `options` - Options to pass on.
-    ///
-    /// # Examples
-    ///
-    /// Create a video writer that produces fragmented MP4.
-    ///
-    /// ```ignore
-    /// let mut options = HashMap::new();
-    /// options.insert(
-    ///     "movflags".to_string(),
-    ///     "frag_keyframe+empty_moov".to_string(),
-    /// );
-    ///
-    /// let mut writer = FileWriter::new(
-    ///     &PathBuf::from("my_file.mp4").into(),
-    ///     &options.into(),
-    /// )
-    /// .unwrap();
-    /// ```
-    pub fn new_with_options(dest: &Locator, options: &Options) -> Result<Self> {
-        let output = ffmpeg::format::output_with(&dest.resolve(), options.to_dict())?;
-
-        Ok(Self {
-            dest: dest.clone(),
-            output,
-        })
-    }
-
-    /// Create a new file writer for video files with a custom format specifier and custom options
-    /// for the ffmpeg backend.
-    ///
-    /// # Arguments
-    ///
-    /// * `dest` - Where to write to.
-    /// * `format` - Container format to use.
-    /// * `options` - Options to pass on.
-    pub fn new_with_format_and_options(
-        dest: &Locator,
-        format: &str,
-        options: &Options,
-    ) -> Result<Self> {
-        let output = ffmpeg::format::output_as_with(&dest.resolve(), format, options.to_dict())?;
-
-        Ok(Self {
-            dest: dest.clone(),
-            output,
-        })
+    #[inline]
+    pub fn new(destination: impl Into<Location>) -> Result<Self> {
+        WriterBuilder::new(destination).build()
     }
 }
 
@@ -376,7 +302,52 @@ pub type Buf = Vec<u8>;
 /// Type alias for multiple buffers.
 pub type Bufs = Vec<Buf>;
 
+/// Build a [`BufWriter`].
+pub struct BufWriterBuilder<'a> {
+    format: &'a str,
+    options: Option<&'a Options>,
+}
+
+impl<'a> BufWriterBuilder<'a> {
+    /// Create a new writer that writes to a buffer.
+    ///
+    /// # Arguments
+    ///
+    /// * `format` - Container format to use.
+    pub fn new(format: &'a str) -> Self {
+        Self {
+            format,
+            options: None,
+        }
+    }
+
+    /// Specify options for the backend.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Options to pass on to output.
+    pub fn with_options(&mut self, options: &'a Options) -> &mut Self {
+        self.options = Some(options);
+        self
+    }
+
+    /// Build [`BufWriter`].
+    pub fn build(self) -> Result<BufWriter> {
+        Ok(BufWriter {
+            output: ffi::output_raw(self.format)?,
+            options: self.options.cloned().unwrap_or_default(),
+        })
+    }
+}
+
 /// Video writer that writes to a buffer.
+///
+/// # Example
+///
+/// ```ignore
+/// let mut writer = BufWriter::new("mp4").unwrap();
+/// let bytes = writer.write_header()?;
+/// ```
 pub struct BufWriter {
     pub(crate) output: AvOutput,
     options: Options,
@@ -388,28 +359,9 @@ impl BufWriter {
     /// # Arguments
     ///
     /// * `format` - Container format to use.
-    ///
-    /// # Examples
-    ///
-    /// ```ignore
-    /// let mut writer = BufWriter::new("mp4").unwrap();
-    /// let bytes = writer.write_header()?;
-    /// ```
+    #[inline]
     pub fn new(format: &str) -> Result<Self> {
-        Self::new_with(format, Default::default())
-    }
-
-    /// Create a video writer that writes to a buffer and returns the resulting bytes. This
-    /// constructor also allows for passing options for the ffmpeg backend.
-    ///
-    /// # Arguments
-    ///
-    /// * `format` - Container format to use.
-    /// * `options` - Options to pass on to ffmpeg.
-    pub fn new_with(format: &str, options: Options) -> Result<Self> {
-        let output = ffi::output_raw(format)?;
-
-        Ok(Self { output, options })
+        BufWriterBuilder::new(format).build()
     }
 
     fn begin_write(&mut self) {
@@ -434,7 +386,54 @@ impl Drop for BufWriter {
 unsafe impl Send for BufWriter {}
 unsafe impl Sync for BufWriter {}
 
-/// Video writer that writes to a packetized buffer.
+/// Build a [`PacketizedBufWriter`].
+pub struct PacketizedBufWriterBuilder<'a> {
+    format: &'a str,
+    options: Option<&'a Options>,
+}
+
+impl<'a> PacketizedBufWriterBuilder<'a> {
+    /// Create a new writer that writes to a packetized buffer.
+    ///
+    /// # Arguments
+    ///
+    /// * `format` - Container format to use.
+    pub fn new(format: &'a str) -> Self {
+        Self {
+            format,
+            options: None,
+        }
+    }
+
+    /// Specify options for the backend.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Options to pass on to output.
+    pub fn with_options(&mut self, options: &'a Options) -> &mut Self {
+        self.options = Some(options);
+        self
+    }
+
+    /// Build [`PacketizedBufWriter`].
+    pub fn build(self) -> Result<PacketizedBufWriter> {
+        Ok(PacketizedBufWriter {
+            output: ffi::output_raw(self.format)?,
+            options: self.options.cloned().unwrap_or_default(),
+            buffers: Vec::new(),
+        })
+    }
+}
+
+/// Video writer that writes multiple packets to a buffer and returns the resulting
+/// bytes for each packet.
+///
+/// # Example
+///
+/// ```ignore
+/// let mut writer = BufPacketizedWriter::new("rtp").unwrap();
+/// let bytes = writer.write_header()?;
+/// ```
 pub struct PacketizedBufWriter {
     pub(crate) output: AvOutput,
     options: Options,
@@ -451,13 +450,7 @@ impl PacketizedBufWriter {
     /// # Arguments
     ///
     /// * `format` - Container format to use.
-    ///
-    /// # Examples
-    ///
-    /// ```ignore
-    /// let mut writer = BufPacketizedWriter::new("rtp").unwrap();
-    /// let bytes = writer.write_header()?;
-    /// ```
+    #[inline]
     pub fn new(format: &str) -> Result<Self> {
         Self::new_with(format, Default::default())
     }
@@ -507,49 +500,6 @@ impl Write for PacketizedBufWriter {}
 
 unsafe impl Send for PacketizedBufWriter {}
 unsafe impl Sync for PacketizedBufWriter {}
-
-/// Wrapper type for any valid video source. Currently, this could be a URI, file path or any other
-/// input the backend will accept. Later, we might add some scaffolding to have stricter typing.
-// TODO: Can do better on this API.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Locator {
-    Path(PathBuf),
-    Url(Url),
-}
-
-impl Locator {
-    /// Resolves the locator into a `PathBuf` for usage with `ffmpeg-next`.
-    fn resolve(&self) -> &Path {
-        match self {
-            Locator::Path(path) => path.as_path(),
-            Locator::Url(url) => Path::new(url.as_str()),
-        }
-    }
-}
-
-/// Allow conversion from path to `Locator`.
-impl From<PathBuf> for Locator {
-    fn from(path: PathBuf) -> Locator {
-        Locator::Path(path)
-    }
-}
-
-/// Allow conversion from `Url` to `Locator`.
-impl From<Url> for Locator {
-    fn from(url: Url) -> Locator {
-        Locator::Url(url)
-    }
-}
-
-/// Allow conversion to string and display for locator types.
-impl std::fmt::Display for Locator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Locator::Path(ref path) => write!(f, "{}", path.display()),
-            Locator::Url(ref url) => write!(f, "{url}"),
-        }
-    }
-}
 
 pub(crate) mod private {
     use super::*;

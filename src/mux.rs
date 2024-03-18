@@ -1,201 +1,60 @@
 extern crate ffmpeg_next as ffmpeg;
 
-use std::collections::HashMap;
-
 use ffmpeg::codec::Id as AvCodecId;
 use ffmpeg::{Error as AvError, Rational as AvRational};
 
+use crate::error::Error;
 use crate::extradata::extract_parameter_sets_h264;
+use crate::extradata::{Pps, Sps};
 use crate::ffi::extradata;
-use crate::io::{BufWriter, PacketizedBufWriter, Reader, Write, Writer};
-use crate::options::Options;
-use crate::{Error, Locator, Packet, Pps, Sps, StreamInfo};
+use crate::io::{Reader, Write};
+use crate::packet::Packet;
+use crate::stream::StreamInfo;
 
 type Result<T> = std::result::Result<T, Error>;
 
-/// Represents a muxer. A muxer allows muxing media packets into a new container format. Muxing does
-/// not require encoding and/or decoding.
-pub struct Muxer<W: Write> {
-    pub(crate) writer: W,
-    mapping: HashMap<usize, StreamDescription>,
+/// Builds a [`Muxer`].
+pub struct MuxerBuilder<W: Write> {
+    writer: W,
     interleaved: bool,
-    have_written_header: bool,
-    have_written_trailer: bool,
+    mapping: std::collections::HashMap<usize, StreamDescription>,
 }
 
-/// Represents a muxer that writes to a file.
-pub type FileMuxer = Muxer<Writer>;
-
-/// Represents a muxer that writes to a buffer.
-pub type BufMuxer = Muxer<BufWriter>;
-
-/// Represents a muxer that writes to a packetized buffer.
-pub type PacketizedBufMuxer = Muxer<PacketizedBufWriter>;
-
-impl Muxer<Writer> {
-    /// Create a muxer that writes to a file.
-    ///
-    /// # Arguments
-    ///
-    /// * `dest` - Locator to mux to, like a file or URL.
-    ///
-    /// # Examples
-    ///
-    /// Mux to an MKV file.
-    ///
-    /// ```ignore
-    /// let reader = Reader::new(&PathBuf::from("from_file.mp4").into()).unwrap();
-    /// let muxer = Muxer::new_to_file(&PathBuf::from("to_file.mkv").into())
-    ///     .unwrap()
-    ///     .with_streams(&reader)
-    ///     .unwrap();
-    ///
-    /// while let Ok(packet) = reader.read() {
-    ///     muxer.mux(packet).unwrap();
-    /// }
-    ///
-    /// muxer.finish().unwrap();
-    /// ```
-    pub fn new_to_file(dest: &Locator) -> Result<Self> {
-        Self::from(Writer::new(dest)?)
-    }
-
-    /// Create a muxer that writes to a file and allows for specifying ffmpeg options for the
-    /// destination writer.
-    ///
-    /// # Arguments
-    ///
-    /// * `dest` - Locator to mux to, like a file or URL.
-    /// * `format` - Format to mux into.
-    pub fn new_to_file_with_format(dest: &Locator, format: &str) -> Result<Self> {
-        Self::from(Writer::new_with_format(dest, format)?)
-    }
-}
-
-impl Muxer<PacketizedBufWriter> {
-    /// Create a muxer that writes to a packetized buffer. This is the packetized variant of
-    /// `new_to_buf`.
-    ///
-    /// # Arguments
-    ///
-    /// * `format` - Format to mux into.
-    pub fn new_to_packetized_buf(format: &str) -> Result<Self> {
-        Self::from(PacketizedBufWriter::new(format)?)
-    }
-
-    /// Create a muxer that writes to a packetized buffer and allows for specifying ffmpeg options
-    /// for the destination writer.
-    ///
-    /// # Arguments
-    ///
-    /// * `format` - Format to mux into.
-    /// * `options` - Options for the writer.
-    pub fn new_to_packetized_buf_with_options(format: &str, options: Options) -> Result<Self> {
-        Self::from(PacketizedBufWriter::new_with(format, options)?)
-    }
-}
-
-impl Muxer<BufWriter> {
-    /// Create a muxer that writes to a buffer.
-    ///
-    /// # Arguments
-    ///
-    /// * `format` - Format to mux into.
-    ///
-    /// # Examples
-    ///
-    /// Mux from file to mp4 and print length of first 100 buffer segments.
-    ///
-    /// ```ignore
-    /// let reader = Reader::new(&PathBuf::from("my_file.mp4").into()).unwrap();
-    /// let mut muxer = Muxer::new_to_buf("mp4")
-    ///     .unwrap()
-    ///     .with_streams(&reader)
-    ///     .unwrap();
-    ///
-    /// for _ in 0..100 {
-    ///     println!("len: {}", muxer.mux().unwrap().len());
-    /// }
-    ///
-    /// muxer.finish()?;
-    /// ```
-    pub fn new_to_buf(format: &str) -> Result<Self> {
-        Self::from(BufWriter::new(format)?)
-    }
-
-    /// Create a muxer that writes to a buffer and allows for specifying ffmpeg options for the
-    /// destination writer.
-    ///
-    /// # Arguments
-    ///
-    /// * `format` - Format to mux into.
-    /// * `options` - Options for the writer.
-    pub fn new_to_buf_with_options(format: &str, options: Options) -> Result<Self> {
-        Self::from(BufWriter::new_with(format, options)?)
-    }
-}
-
-impl<W: Write> Muxer<W> {
-    /// Create a muxer.
-    ///
-    /// # Arguments
-    ///
-    /// * `writer` - Video writer that implements the `Writer` trait.
-    ///
-    /// # Examples
-    ///
-    /// ```ignore
-    /// let muxer = Muxer::from(BufWriter::new("mp4").unwrap()).unwrap();
-    /// ```
-    fn from(writer: W) -> Result<Self> {
-        Ok(Self {
+impl<W: Write> MuxerBuilder<W> {
+    /// Create a new [`MuxerBuilder`].
+    pub fn new(writer: W) -> Self {
+        Self {
             writer,
-            mapping: HashMap::new(),
             interleaved: false,
-            have_written_header: false,
-            have_written_trailer: false,
-        })
+            mapping: std::collections::HashMap::new(),
+        }
     }
 
-    // TODO
-    /// Turn the muxer into an interleaved version, that automatically reorders packets when
-    /// necessary.
-    pub fn interleaved(mut self) -> Self {
-        self.interleaved = true;
-        self
-    }
-
-    // TODO
     /// Add an output stream to the muxer based on an input stream from a reader. Any packets
-    /// provided to `mux` from the given input stream will be muxed to the corresponding output
-    /// stream.
+    /// provided to [`Muxer::mux()`] from the given input stream will be muxed to the corresponding
+    /// output stream.
     ///
     /// At least one stream must be added before any muxing can take place.
     ///
     /// # Arguments
     ///
     /// * `stream_info` - Stream information. Usually this information is retrieved by calling
-    ///   `reader.stream_info(index)`.
-    pub fn with_stream(mut self, stream_info: StreamInfo) -> Result<Self> {
+    ///   [`Reader::stream_info()`].
+    pub fn with_stream(&mut self, stream_info: StreamInfo) -> Result<&mut Self> {
         let (index, codec_parameters, reader_stream_time_base) = stream_info.into_parts();
-
         let mut writer_stream = self
             .writer
             .output_mut()
             .add_stream(ffmpeg::encoder::find(codec_parameters.id()))?;
         writer_stream.set_parameters(codec_parameters);
-
         let stream_description = StreamDescription {
             index: writer_stream.index(),
             source_time_base: reader_stream_time_base,
         };
-
         self.mapping.insert(index, stream_description);
-
         Ok(self)
     }
 
-    // TODO
     /// Add output streams from reader to muxer. This will add all streams in the reader and
     /// duplicate them in the muxer. After calling this, it is safe to mux all packets from the
     /// provided reader.
@@ -203,19 +62,90 @@ impl<W: Write> Muxer<W> {
     /// # Arguments
     ///
     /// * `reader` - Reader to add streams from.
-    pub fn with_streams(mut self, reader: &Reader) -> Result<Self> {
+    pub fn with_streams(&mut self, reader: &Reader) -> Result<&mut Self> {
         for stream in reader.input.streams() {
-            self = self.with_stream(reader.stream_info(stream.index())?)?;
+            self.with_stream(reader.stream_info(stream.index())?)?;
         }
-
         Ok(self)
+    }
+
+    /// Set interleaved. This will cause the muxer to use interleaved write instead of normal
+    /// write.
+    pub fn interleaved(&mut self) -> &mut Self {
+        self.interleaved = true;
+        self
+    }
+
+    /// Build [`Muxer`].
+    pub fn build(self) -> Result<Muxer<W>> {
+        Ok(Muxer {
+            writer: self.writer,
+            mapping: self.mapping,
+            interleaved: self.interleaved,
+            have_written_header: false,
+            have_written_trailer: false,
+        })
+    }
+}
+
+/// Represents a muxer. A muxer allows muxing media packets into a new container format. Muxing does
+/// not require encoding and/or decoding.
+///
+/// # Examples
+///
+/// Mux to an MKV file:
+///
+/// ```ignore
+/// let reader = Reader::new(&PathBuf::from("from_file.mp4").into()).unwrap();
+/// let writer = Writer::new(&PathBuf::from("to_file.mkv").into()).unwrap();
+/// let muxer = Muxer::new(writer)
+///     .unwrap()
+///     .with_streams(&reader)
+///     .unwrap();
+/// while let Ok(packet) = reader.read() {
+///     muxer.mux(packet).unwrap();
+/// }
+/// muxer.finish().unwrap();
+/// ```
+///
+/// Mux from file to MP4 and print length of first 100 buffer segments:
+///
+/// ```ignore
+/// let reader = Reader::new(&PathBuf::from("my_file.mp4").into()).unwrap();
+/// let writer = BufWriter::new("mp4").unwrap();
+/// let mut muxer = Muxer::new(writer)
+///     .unwrap()
+///     .with_streams(&reader)
+///     .unwrap();
+/// for _ in 0..100 {
+///     println!("len: {}", muxer.mux().unwrap().len());
+/// }
+/// muxer.finish()?;
+/// ```
+pub struct Muxer<W: Write> {
+    pub(crate) writer: W,
+    mapping: std::collections::HashMap<usize, StreamDescription>,
+    interleaved: bool,
+    have_written_header: bool,
+    have_written_trailer: bool,
+}
+
+impl<W: Write> Muxer<W> {
+    /// Create a muxer.
+    ///
+    /// # Arguments
+    ///
+    /// * `writer` - Video writer that implements the [`Write`] trait.
+    #[inline]
+    pub fn new(writer: W) -> Result<Self> {
+        MuxerBuilder::new(writer).build()
     }
 
     /// Mux a single packet. This will mux a single packet.
     ///
     /// # Arguments
     ///
-    /// * `packet` - Packet to mux.
+    /// * `packet` - [`Packet`] to mux.
     pub fn mux(&mut self, packet: Packet) -> Result<W::Out> {
         if self.have_written_header {
             let mut packet = packet.into_inner();
