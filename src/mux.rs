@@ -4,8 +4,7 @@ use ffmpeg::codec::Id as AvCodecId;
 use ffmpeg::{Error as AvError, Rational as AvRational};
 
 use crate::error::Error;
-use crate::extradata::extract_parameter_sets_h264;
-use crate::extradata::{Pps, Sps};
+use crate::extradata::{extract_parameter_sets_h264, Pps, Sps};
 use crate::ffi::extradata;
 use crate::io::{Reader, Write};
 use crate::packet::Packet;
