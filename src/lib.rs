@@ -21,6 +21,7 @@ mod ffi_hwaccel;
 pub use decode::{Decoder, DecoderBuilder};
 pub use encode::{Encoder, EncoderBuilder};
 pub use error::Error;
+#[cfg(feature = "ndarray")]
 pub use frame::Frame;
 pub use init::init;
 pub use io::{Reader, ReaderBuilder, Writer, WriterBuilder};
