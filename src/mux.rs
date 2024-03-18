@@ -97,9 +97,9 @@ impl<W: Write> MuxerBuilder<W> {
 /// ```ignore
 /// let reader = Reader::new(Path::new("from_file.mp4")).unwrap();
 /// let writer = Writer::new(Path::new("to_file.mkv")).unwrap();
-/// let muxer = Muxer::new(writer)
-///     .unwrap()
+/// let muxer = MuxerBuilder::new(writer)
 ///     .with_streams(&reader)
+///     .build()
 ///     .unwrap();
 /// while let Ok(packet) = reader.read() {
 ///     muxer.mux(packet).unwrap();
@@ -112,8 +112,7 @@ impl<W: Write> MuxerBuilder<W> {
 /// ```ignore
 /// let reader = Reader::new(Path::new("my_file.mp4")).unwrap();
 /// let writer = BufWriter::new("mp4").unwrap();
-/// let mut muxer = Muxer::new(writer)
-///     .unwrap()
+/// let mut muxer = MuxerBuilder::new(writer)
 ///     .with_streams(&reader)
 ///     .unwrap();
 /// for _ in 0..100 {
@@ -130,16 +129,6 @@ pub struct Muxer<W: Write> {
 }
 
 impl<W: Write> Muxer<W> {
-    /// Create a non-interleaved muxer.
-    ///
-    /// # Arguments
-    ///
-    /// * `writer` - Video writer that implements the [`Write`] trait.
-    #[inline]
-    pub fn new(writer: W) -> Result<Self> {
-        MuxerBuilder::new(writer).build()
-    }
-
     /// Mux a single packet. This will mux a single packet.
     ///
     /// # Arguments
