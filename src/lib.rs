@@ -18,5 +18,18 @@ pub mod time;
 mod ffi;
 mod ffi_hwaccel;
 
+pub use decode::{Decoder, DecoderBuilder};
+pub use encode::{Encoder, EncoderBuilder};
+pub use error::Error;
+pub use frame::Frame;
+pub use init::init;
+pub use io::{Reader, ReaderBuilder, Writer, WriterBuilder};
+pub use location::Location;
+pub use mux::{Muxer, MuxerBuilder};
+pub use options::Options;
+pub use packet::Packet;
+pub use resize::Resize;
+pub use time::Time;
+
 /// Re-export inner `ffmpeg` library.
 pub use ffmpeg_next as ffmpeg;

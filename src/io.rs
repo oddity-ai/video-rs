@@ -91,7 +91,7 @@ impl Reader {
     ///
     /// * `source` - Source to read from.
     #[inline]
-    pub fn new<'a>(source: impl Into<Location>) -> Result<Self> {
+    pub fn new(source: impl Into<Location>) -> Result<Self> {
         ReaderBuilder::new(source).build()
     }
 
@@ -229,27 +229,27 @@ impl<'a> WriterBuilder<'a> {
     pub fn build(self) -> Result<Writer> {
         match (self.format, self.options) {
             (None, None) => Ok(Writer {
-                destination: self.destination.into(),
                 output: ffmpeg::format::output(&self.destination.as_path())?,
+                destination: self.destination,
             }),
             (Some(format), None) => Ok(Writer {
-                destination: self.destination.into(),
                 output: ffmpeg::format::output_as(&self.destination.as_path(), format)?,
+                destination: self.destination,
             }),
             (None, Some(options)) => Ok(Writer {
-                destination: self.destination.into(),
                 output: ffmpeg::format::output_with(
                     &self.destination.as_path(),
                     options.to_dict(),
                 )?,
+                destination: self.destination,
             }),
             (Some(format), Some(options)) => Ok(Writer {
-                destination: self.destination.into(),
                 output: ffmpeg::format::output_as_with(
                     &self.destination.as_path(),
                     format,
                     options.to_dict(),
                 )?,
+                destination: self.destination,
             }),
         }
     }

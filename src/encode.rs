@@ -23,7 +23,7 @@ use crate::frame::Frame;
 use crate::frame::{PixelFormat, RawFrame, FRAME_PIXEL_FORMAT};
 use crate::io::private::Write;
 use crate::io::{Writer, WriterBuilder};
-use crate::locator::Locator;
+use crate::location::Location;
 use crate::options::Options;
 #[cfg(feature = "ndarray")]
 use crate::time::Time;
@@ -32,7 +32,7 @@ type Result<T> = std::result::Result<T, Error>;
 
 /// Builds an [`Encoder`].
 pub struct EncoderBuilder<'a> {
-    destination: &'a Locator,
+    destination: Location,
     settings: Settings,
     options: Option<&'a Options>,
     format: Option<&'a str>,
@@ -44,9 +44,9 @@ impl<'a> EncoderBuilder<'a> {
     ///
     /// * `destination` - Where to encode to.
     /// * `settings` - Encoding settings.
-    pub fn new(destination: &'a Locator, settings: Settings) -> Self {
+    pub fn new(destination: impl Into<Location>, settings: Settings) -> Self {
         Self {
-            destination,
+            destination: destination.into(),
             settings,
             options: None,
             format: None,
@@ -136,7 +136,7 @@ impl Encoder {
     /// * `destination` - Where to encode to.
     /// * `settings` - Encoding settings.
     #[inline]
-    pub fn new(destination: &Locator, settings: Settings) -> Result<Self> {
+    pub fn new(destination: impl Into<Location>, settings: Settings) -> Result<Self> {
         EncoderBuilder::new(destination, settings).build()
     }
 

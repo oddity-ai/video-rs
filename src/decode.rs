@@ -25,7 +25,7 @@ type Result<T> = std::result::Result<T, Error>;
 
 /// Builds a [`Decoder`].
 pub struct DecoderBuilder<'a> {
-    source: &'a Location,
+    source: Location,
     options: Option<&'a Options>,
     resize: Option<Resize>,
     hardware_acceleration_device_type: Option<HardwareAccelerationDeviceType>,
@@ -35,9 +35,9 @@ impl<'a> DecoderBuilder<'a> {
     /// Create a decoder with the specified source.
     ///
     /// * `source` - Source to decode.
-    pub fn new(source: &'a Location) -> Self {
+    pub fn new(source: impl Into<Location>) -> Self {
         Self {
-            source,
+            source: source.into(),
             options: None,
             resize: None,
             hardware_acceleration_device_type: None,
@@ -113,7 +113,7 @@ impl Decoder {
     ///
     /// * `source` - Source to decode.
     #[inline]
-    pub fn new(source: &Location) -> Result<Self> {
+    pub fn new(source: impl Into<Location>) -> Result<Self> {
         DecoderBuilder::new(source).build()
     }
 
