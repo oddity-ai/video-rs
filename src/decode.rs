@@ -93,7 +93,7 @@ impl<'a> DecoderBuilder<'a> {
 /// # Example
 ///
 /// ```ignore
-/// let decoder = Decoder::new(&Path::new("video.mp4")).unwrap();
+/// let decoder = Decoder::new(Path::new("video.mp4")).unwrap();
 /// decoder
 ///     .decode_iter()
 ///     .take_while(Result::is_ok)

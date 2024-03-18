@@ -24,7 +24,7 @@ pub use error::Error;
 pub use frame::Frame;
 pub use init::init;
 pub use io::{Reader, ReaderBuilder, Writer, WriterBuilder};
-pub use location::Location;
+pub use location::{Location, Url};
 pub use mux::{Muxer, MuxerBuilder};
 pub use options::Options;
 pub use packet::Packet;

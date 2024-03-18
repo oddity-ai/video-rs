@@ -95,8 +95,8 @@ impl<W: Write> MuxerBuilder<W> {
 /// Mux to an MKV file:
 ///
 /// ```ignore
-/// let reader = Reader::new(&Path::new("from_file.mp4")).unwrap();
-/// let writer = Writer::new(&Path::new("to_file.mkv")).unwrap();
+/// let reader = Reader::new(Path::new("from_file.mp4")).unwrap();
+/// let writer = Writer::new(Path::new("to_file.mkv")).unwrap();
 /// let muxer = Muxer::new(writer)
 ///     .unwrap()
 ///     .with_streams(&reader)
@@ -110,7 +110,7 @@ impl<W: Write> MuxerBuilder<W> {
 /// Mux from file to MP4 and print length of first 100 buffer segments:
 ///
 /// ```ignore
-/// let reader = Reader::new(&Path::new("my_file.mp4")).unwrap();
+/// let reader = Reader::new(Path::new("my_file.mp4")).unwrap();
 /// let writer = BufWriter::new("mp4").unwrap();
 /// let mut muxer = Muxer::new(writer)
 ///     .unwrap()

@@ -26,7 +26,7 @@ type Result<T> = std::result::Result<T, Error>;
 ///     "tcp".to_string(),
 /// );
 ///
-/// let mut reader = ReaderBuilder::new(&Path::new("my_file.mp4"))
+/// let mut reader = ReaderBuilder::new(Path::new("my_file.mp4"))
 /// .with_options(&options.into())
 /// .unwrap();
 /// ```
@@ -104,7 +104,7 @@ impl Reader {
     /// Read a single packet:
     ///
     /// ```ignore
-    /// let mut reader = Reader::new(&Path::new("my_video.mp4")).unwrap();
+    /// let mut reader = Reader::new(Path::new("my_video.mp4")).unwrap();
     /// let stream = reader.best_video_stream_index().unwrap();
     /// let mut packet = reader.read(stream).unwrap();
     /// ```
@@ -266,7 +266,7 @@ impl<'a> WriterBuilder<'a> {
 ///     "frag_keyframe+empty_moov".to_string(),
 /// );
 ///
-/// let mut writer = WriterBuilder::new(&Path::new("my_file.mp4"))
+/// let mut writer = WriterBuilder::new(Path::new("my_file.mp4"))
 /// .with_options(&options.into())
 /// .unwrap();
 /// ```

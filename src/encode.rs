@@ -100,12 +100,12 @@ impl<'a> EncoderBuilder<'a> {
 ///
 /// ```ignore
 /// let encoder = Encoder::new(
-///     &Path::new("video_in.mp4"),
+///     Path::new("video_in.mp4"),
 ///     Settings::for_h264_yuv420p(800, 600, 30.0)
 /// )
 /// .unwrap();
 ///
-/// let decoder = Decoder::new(&Path::new("video_out.mkv")).unwrap();
+/// let decoder = Decoder::new(Path::new("video_out.mkv")).unwrap();
 /// decoder
 ///     .decode_iter()
 ///     .take_while(Result::is_ok)
