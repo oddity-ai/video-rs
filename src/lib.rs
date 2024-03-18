@@ -31,5 +31,5 @@ pub use packet::Packet;
 pub use resize::Resize;
 pub use time::Time;
 
-/// Re-export inner `ffmpeg` library.
+/// Re-export backend `ffmpeg` library.
 pub use ffmpeg_next as ffmpeg;
