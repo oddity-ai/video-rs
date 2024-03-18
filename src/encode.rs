@@ -81,7 +81,7 @@ impl<'a> EncoderBuilder<'a> {
         self
     }
 
-    /// Build the encoder.
+    /// Build an [`Encoder`].
     pub fn build(self) -> Result<Encoder> {
         let mut writer_builder = WriterBuilder::new(self.destination);
         if let Some(options) = self.options {
