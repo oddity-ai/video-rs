@@ -448,25 +448,7 @@ impl PacketizedBufWriter {
     /// * `format` - Container format to use.
     #[inline]
     pub fn new(format: &str) -> Result<Self> {
-        Self::new_with(format, Default::default())
-    }
-
-    /// Create a video writer that writes multiple packets to a buffer and returns the resulting
-    /// bytes for each packet. This constructor also allows for passing options for the ffmpeg
-    /// backend.
-    ///
-    /// # Arguments
-    ///
-    /// * `format` - Container format to use.
-    /// * `options` - Options to pass on to ffmpeg.
-    pub fn new_with(format: &str, options: Options) -> Result<Self> {
-        let output = ffi::output_raw(format)?;
-
-        Ok(Self {
-            output,
-            options,
-            buffers: Vec::new(),
-        })
+        PacketizedBufWriterBuilder::new(format).build()
     }
 
     fn begin_write(&mut self) {
