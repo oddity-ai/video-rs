@@ -47,6 +47,14 @@ impl RtpMuxerBuilder {
         self.inner.with_streams(reader)?;
         Ok(self)
     }
+
+    /// Build [`RtpMuxer`].
+    ///
+    /// The muxer will not write in interleaved mode.
+    #[inline]
+    pub fn build(self) -> Result<RtpMuxer> {
+        Ok(RtpMuxer(self.inner.build()?))
+    }
 }
 
 /// Represents a muxer that muxes into the RTP format and streams the output over RTP.
