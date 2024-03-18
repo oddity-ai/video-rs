@@ -14,7 +14,7 @@ use crate::ffi_hwaccel;
 use crate::frame::Frame;
 use crate::frame::{RawFrame, FRAME_PIXEL_FORMAT};
 use crate::hwaccel::{HardwareAccelerationContext, HardwareAccelerationDeviceType};
-use crate::io::Reader;
+use crate::io::{Reader, ReaderBuilder};
 use crate::location::Location;
 use crate::options::Options;
 use crate::packet::Packet;
@@ -73,7 +73,11 @@ impl<'a> DecoderBuilder<'a> {
 
     /// Build [`Decoder`].
     pub fn build(self) -> Result<Decoder> {
-        let reader = Reader::new(self.source)?;
+        let mut reader_builder = ReaderBuilder::new(self.source);
+        if let Some(options) = self.options {
+            reader_builder.with_options(options);
+        }
+        let reader = reader_builder.build()?;
         let reader_stream_index = reader.best_video_stream_index()?;
         Ok(Decoder {
             decoder: DecoderSplit::new(
