@@ -130,7 +130,7 @@ pub struct Muxer<W: Write> {
 }
 
 impl<W: Write> Muxer<W> {
-    /// Create a muxer.
+    /// Create a non-interleaved muxer.
     ///
     /// # Arguments
     ///
