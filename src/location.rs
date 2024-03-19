@@ -5,14 +5,10 @@ pub use url::Url;
 /// resource (a URL).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Location {
-    File {
-        /// Path to underlying file.
-        path: std::path::PathBuf,
-    },
-    Network {
-        /// URL pointing to network stream.
-        url: Url,
-    },
+    /// File source.
+    File(std::path::PathBuf),
+    /// Network source.
+    Network(Url),
 }
 
 impl Location {
@@ -22,43 +18,41 @@ impl Location {
     /// URLs to ffmpeg).
     pub fn as_path(&self) -> &std::path::Path {
         match self {
-            Location::File { path } => path.as_path(),
-            Location::Network { url } => std::path::Path::new(url.as_str()),
+            Location::File(path) => path.as_path(),
+            Location::Network(url) => std::path::Path::new(url.as_str()),
         }
     }
 }
 
 impl From<std::path::PathBuf> for Location {
     fn from(value: std::path::PathBuf) -> Location {
-        Location::File { path: value }
+        Location::File(value)
     }
 }
 
 impl From<&std::path::Path> for Location {
     fn from(value: &std::path::Path) -> Location {
-        Location::File {
-            path: value.to_path_buf(),
-        }
+        Location::File(value.to_path_buf())
     }
 }
 
 impl From<Url> for Location {
     fn from(value: Url) -> Location {
-        Location::Network { url: value }
+        Location::Network(value)
     }
 }
 
 impl From<&Url> for Location {
     fn from(value: &Url) -> Location {
-        Location::Network { url: value.clone() }
+        Location::Network(value.clone())
     }
 }
 
 impl std::fmt::Display for Location {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Location::File { path } => write!(f, "{}", path.display()),
-            Location::Network { url } => write!(f, "{url}"),
+            Location::File(path) => write!(f, "{}", path.display()),
+            Location::Network(url) => write!(f, "{url}"),
         }
     }
 }
