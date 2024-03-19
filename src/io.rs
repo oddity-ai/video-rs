@@ -53,7 +53,7 @@ impl<'a> ReaderBuilder<'a> {
     /// # Arguments
     ///
     /// * `options` - Options to pass on to input.
-    pub fn with_options(&mut self, options: &'a Options) -> &mut Self {
+    pub fn with_options(mut self, options: &'a Options) -> Self {
         self.options = Some(options);
         self
     }
@@ -208,7 +208,7 @@ impl<'a> WriterBuilder<'a> {
     /// # Arguments
     ///
     /// * `format` - Container format to use.
-    pub fn with_format(&mut self, format: &'a str) -> &mut Self {
+    pub fn with_format(mut self, format: &'a str) -> Self {
         self.format = Some(format);
         self
     }
@@ -218,7 +218,7 @@ impl<'a> WriterBuilder<'a> {
     /// # Arguments
     ///
     /// * `options` - Options to pass on to output.
-    pub fn with_options(&mut self, options: &'a Options) -> &mut Self {
+    pub fn with_options(mut self, options: &'a Options) -> Self {
         self.options = Some(options);
         self
     }
@@ -322,7 +322,7 @@ impl<'a> BufWriterBuilder<'a> {
     /// # Arguments
     ///
     /// * `options` - Options to pass on to output.
-    pub fn with_options(&mut self, options: &'a Options) -> &mut Self {
+    pub fn with_options(mut self, options: &'a Options) -> Self {
         self.options = Some(options);
         self
     }
@@ -406,7 +406,7 @@ impl<'a> PacketizedBufWriterBuilder<'a> {
     /// # Arguments
     ///
     /// * `options` - Options to pass on to output.
-    pub fn with_options(&mut self, options: &'a Options) -> &mut Self {
+    pub fn with_options(mut self, options: &'a Options) -> Self {
         self.options = Some(options);
         self
     }

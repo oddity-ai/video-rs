@@ -47,7 +47,7 @@ impl<'a> DecoderBuilder<'a> {
     /// Set custom options. Options are applied to the input.
     ///
     /// * `options` - Custom options.
-    pub fn with_options(&mut self, options: &'a Options) -> &mut Self {
+    pub fn with_options(mut self, options: &'a Options) -> Self {
         self.options = Some(options);
         self
     }
@@ -55,7 +55,7 @@ impl<'a> DecoderBuilder<'a> {
     /// Set resizing to apply to frames.
     ///
     /// * `resize` - Resizing to apply.
-    pub fn with_resize(&mut self, resize: Resize) -> &mut Self {
+    pub fn with_resize(mut self, resize: Resize) -> Self {
         self.resize = Some(resize);
         self
     }
@@ -64,9 +64,9 @@ impl<'a> DecoderBuilder<'a> {
     ///
     /// * `device_type` - Device to use for hardware acceleration.
     pub fn with_hardware_acceleration(
-        &mut self,
+        mut self,
         device_type: HardwareAccelerationDeviceType,
-    ) -> &mut Self {
+    ) -> Self {
         self.hardware_acceleration_device_type = Some(device_type);
         self
     }
@@ -75,7 +75,7 @@ impl<'a> DecoderBuilder<'a> {
     pub fn build(self) -> Result<Decoder> {
         let mut reader_builder = ReaderBuilder::new(self.source);
         if let Some(options) = self.options {
-            reader_builder.with_options(options);
+            reader_builder = reader_builder.with_options(options);
         }
         let reader = reader_builder.build()?;
         let reader_stream_index = reader.best_video_stream_index()?;

@@ -30,8 +30,8 @@ impl RtpMuxerBuilder {
     /// * `stream_info` - Stream information. Usually this information is retrieved by calling
     ///   [`Reader::stream_info()`].
     #[inline]
-    pub fn with_stream(&mut self, stream_info: StreamInfo) -> Result<&mut Self> {
-        self.inner.with_stream(stream_info)?;
+    pub fn with_stream(mut self, stream_info: StreamInfo) -> Result<Self> {
+        self.inner = self.inner.with_stream(stream_info)?;
         Ok(self)
     }
 
@@ -43,8 +43,8 @@ impl RtpMuxerBuilder {
     ///
     /// * `reader` - Reader to add streams from.
     #[inline]
-    pub fn with_streams(&mut self, reader: &Reader) -> Result<&mut Self> {
-        self.inner.with_streams(reader)?;
+    pub fn with_streams(mut self, reader: &Reader) -> Result<Self> {
+        self.inner = self.inner.with_streams(reader)?;
         Ok(self)
     }
 

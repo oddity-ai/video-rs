@@ -39,7 +39,7 @@ impl<W: Write> MuxerBuilder<W> {
     ///
     /// * `stream_info` - Stream information. Usually this information is retrieved by calling
     ///   [`Reader::stream_info()`].
-    pub fn with_stream(&mut self, stream_info: StreamInfo) -> Result<&mut Self> {
+    pub fn with_stream(mut self, stream_info: StreamInfo) -> Result<Self> {
         let (index, codec_parameters, reader_stream_time_base) = stream_info.into_parts();
         let mut writer_stream = self
             .writer
@@ -61,16 +61,16 @@ impl<W: Write> MuxerBuilder<W> {
     /// # Arguments
     ///
     /// * `reader` - Reader to add streams from.
-    pub fn with_streams(&mut self, reader: &Reader) -> Result<&mut Self> {
+    pub fn with_streams(mut self, reader: &Reader) -> Result<Self> {
         for stream in reader.input.streams() {
-            self.with_stream(reader.stream_info(stream.index())?)?;
+            self = self.with_stream(reader.stream_info(stream.index())?)?;
         }
         Ok(self)
     }
 
     /// Set interleaved. This will cause the muxer to use interleaved write instead of normal
     /// write.
-    pub fn interleaved(&mut self) -> &mut Self {
+    pub fn interleaved(mut self) -> Self {
         self.interleaved = true;
         self
     }

@@ -59,7 +59,7 @@ impl<'a> EncoderBuilder<'a> {
     /// # Arguments
     ///
     /// * `options` - The output options.
-    pub fn with_options(&mut self, options: &'a Options) -> &mut Self {
+    pub fn with_options(mut self, options: &'a Options) -> Self {
         self.options = Some(options);
         self
     }
@@ -69,14 +69,14 @@ impl<'a> EncoderBuilder<'a> {
     /// # Arguments
     ///
     /// * `format` - Container format to use.
-    pub fn with_format(&mut self, format: &'a str) -> &mut Self {
+    pub fn with_format(mut self, format: &'a str) -> Self {
         self.format = Some(format);
         self
     }
 
     /// Set interleaved. This will cause the encoder to use interleaved write instead of normal
     /// write.
-    pub fn interleaved(&mut self) -> &mut Self {
+    pub fn interleaved(mut self) -> Self {
         self.interleaved = true;
         self
     }
@@ -85,10 +85,10 @@ impl<'a> EncoderBuilder<'a> {
     pub fn build(self) -> Result<Encoder> {
         let mut writer_builder = WriterBuilder::new(self.destination);
         if let Some(options) = self.options {
-            writer_builder.with_options(options);
+            writer_builder = writer_builder.with_options(options);
         }
         if let Some(format) = self.format {
-            writer_builder.with_format(format);
+            writer_builder = writer_builder.with_format(format);
         }
         Encoder::from_writer(writer_builder.build()?, self.interleaved, self.settings)
     }
