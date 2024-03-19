@@ -76,14 +76,14 @@ impl<W: Write> MuxerBuilder<W> {
     }
 
     /// Build [`Muxer`].
-    pub fn build(self) -> Result<Muxer<W>> {
-        Ok(Muxer {
+    pub fn build(self) -> Muxer<W> {
+        Muxer {
             writer: self.writer,
             mapping: self.mapping,
             interleaved: self.interleaved,
             have_written_header: false,
             have_written_trailer: false,
-        })
+        }
     }
 }
 

@@ -52,8 +52,8 @@ impl RtpMuxerBuilder {
     ///
     /// The muxer will not write in interleaved mode.
     #[inline]
-    pub fn build(self) -> Result<RtpMuxer> {
-        Ok(RtpMuxer(self.inner.build()?))
+    pub fn build(self) -> RtpMuxer {
+        RtpMuxer(self.inner.build())
     }
 }
 
@@ -61,6 +61,13 @@ impl RtpMuxerBuilder {
 pub struct RtpMuxer(Muxer<PacketizedBufWriter>);
 
 impl RtpMuxer {
+    /// Create a new non-interleaved writing [`RtpMuxer`].
+    ///
+    /// The muxer muxes into the RTP format and streams the output over RTP.
+    pub fn new() -> Result<RtpMuxer> {
+        Ok(RtpMuxerBuilder::new()?.build())
+    }
+
     /// Mux a single packet. This will cause the muxer to try and read packets from the preferred
     /// stream, mux it and return one or more RTP buffers.
     pub fn mux(&mut self, packet: Packet) -> Result<Vec<RtpBuf>> {

@@ -24,6 +24,12 @@ impl Location {
     }
 }
 
+impl From<&Location> for Location {
+    fn from(value: &Location) -> Location {
+        value.clone()
+    }
+}
+
 impl From<std::path::PathBuf> for Location {
     fn from(value: std::path::PathBuf) -> Location {
         Location::File(value)
