@@ -406,6 +406,7 @@ impl DecoderSplit {
                         let mut frame_downloaded = RawFrame::empty();
                         frame_downloaded.set_format(FRAME_PIXEL_FORMAT);
                         ffi_hwaccel::hwdevice_transfer_frame(&mut frame_downloaded, &frame)?;
+                        ffi::copy_frame_props(&frame, &mut frame_downloaded);
                         frame_downloaded
                     }
                     _ => frame,
