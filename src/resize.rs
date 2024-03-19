@@ -2,7 +2,7 @@
 type Dims = (u32, u32);
 
 /// Represents the possible resize strategies.
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Resize {
     /// When resizing with `Resize::Exact`, each frame will be resized to the exact width and height
     /// given, without taking into account aspect ratio.

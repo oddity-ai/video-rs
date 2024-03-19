@@ -1,31 +1,38 @@
+use crate::error::Error;
+use crate::extradata::{Pps, Sps};
 use crate::ffi::{rtp_h264_mode_0, rtp_seq_and_timestamp, sdp};
-use crate::io::Buf;
-use crate::{Error, Packet, PacketizedBufMuxer, Pps, Reader, Sps, StreamInfo};
+use crate::io::{Buf, PacketizedBufWriter, Reader};
+use crate::mux::{Muxer, MuxerBuilder};
+use crate::packet::Packet;
+use crate::stream::StreamInfo;
 
 type Result<T> = std::result::Result<T, Error>;
 
-/// Represents a muxer that muxes into the RTP format and streams the
-/// output over RTP.
-pub struct RtpMuxer(PacketizedBufMuxer);
+/// Build an [`RtpMuxer`].
+pub struct RtpMuxerBuilder {
+    inner: MuxerBuilder<PacketizedBufWriter>,
+}
 
-impl RtpMuxer {
-    /// Create a new muxer that produces an RTP stream to a buffer.
-    pub fn new() -> Result<Self> {
-        PacketizedBufMuxer::new_to_packetized_buf("rtp").map(RtpMuxer)
+impl RtpMuxerBuilder {
+    /// Create a new [`RtpMuxerBuilder`].
+    pub fn new() -> Result<RtpMuxerBuilder> {
+        Ok(RtpMuxerBuilder {
+            inner: MuxerBuilder::new(PacketizedBufWriter::new("rtp")?),
+        })
     }
 
-    /// Add an output stream to the muxer based on an input stream from a reader. Any packets
-    /// provided to `mux` from the given input stream will be muxed to the corresponding output
-    /// stream.
+    /// Add an output stream to the muxer based on an input stream from a reader.
     ///
     /// At least one stream must be added before any muxing can take place.
     ///
     /// # Arguments
     ///
     /// * `stream_info` - Stream information. Usually this information is retrieved by calling
-    ///   `reader.stream_info(index)`.
-    pub fn with_stream(self, stream_info: StreamInfo) -> Result<Self> {
-        self.0.with_stream(stream_info).map(RtpMuxer)
+    ///   [`Reader::stream_info()`].
+    #[inline]
+    pub fn with_stream(mut self, stream_info: StreamInfo) -> Result<Self> {
+        self.inner = self.inner.with_stream(stream_info)?;
+        Ok(self)
     }
 
     /// Add output streams from reader to muxer. This will add all streams in the reader and
@@ -35,8 +42,46 @@ impl RtpMuxer {
     /// # Arguments
     ///
     /// * `reader` - Reader to add streams from.
-    pub fn with_streams(self, reader: &Reader) -> Result<Self> {
-        self.0.with_streams(reader).map(RtpMuxer)
+    #[inline]
+    pub fn with_streams(mut self, reader: &Reader) -> Result<Self> {
+        self.inner = self.inner.with_streams(reader)?;
+        Ok(self)
+    }
+
+    /// Build [`RtpMuxer`].
+    ///
+    /// The muxer will not write in interleaved mode.
+    #[inline]
+    pub fn build(self) -> RtpMuxer {
+        RtpMuxer(self.inner.build())
+    }
+}
+
+/// Represents a muxer that muxes into the RTP format and streams the output over RTP.
+pub struct RtpMuxer(Muxer<PacketizedBufWriter>);
+
+impl RtpMuxer {
+    /// Create a new non-interleaved writing [`RtpMuxer`].
+    ///
+    /// The muxer muxes into the RTP format and streams the output over RTP.
+    pub fn new() -> Result<RtpMuxer> {
+        Ok(RtpMuxerBuilder::new()?.build())
+    }
+
+    /// Mux a single packet. This will cause the muxer to try and read packets from the preferred
+    /// stream, mux it and return one or more RTP buffers.
+    pub fn mux(&mut self, packet: Packet) -> Result<Vec<RtpBuf>> {
+        self.0
+            .mux(packet)
+            .map(|bufs| bufs.into_iter().map(|buf| buf.into()).collect())
+    }
+
+    /// Signal to the muxer that writing has finished. This will cause trailing packets to be
+    /// returned if the container format has one.
+    pub fn finish(&mut self) -> Result<Option<Vec<RtpBuf>>> {
+        self.0
+            .finish()
+            .map(|bufs| bufs.map(|bufs| bufs.into_iter().map(|buf| buf.into()).collect()))
     }
 
     /// Get the RTP packetization mode used by the muxer.
@@ -85,22 +130,6 @@ impl RtpMuxer {
     /// ```
     pub fn sdp(&self) -> Result<String> {
         sdp(&self.0.writer.output).map_err(Error::BackendError)
-    }
-
-    /// Mux a single packet. This will cause the muxer to try and read packets from the preferred
-    /// stream, mux it and return one or more RTP buffers.
-    pub fn mux(&mut self, packet: Packet) -> Result<Vec<RtpBuf>> {
-        self.0
-            .mux(packet)
-            .map(|bufs| bufs.into_iter().map(|buf| buf.into()).collect())
-    }
-
-    /// Signal to the muxer that writing has finished. This will cause trailing packets to be
-    /// returned if the container format has one.
-    pub fn finish(&mut self) -> Result<Option<Vec<RtpBuf>>> {
-        self.0
-            .finish()
-            .map(|bufs| bufs.map(|bufs| bufs.into_iter().map(|buf| buf.into()).collect()))
     }
 }
 

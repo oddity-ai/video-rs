@@ -16,18 +16,83 @@ use ffmpeg::util::picture::Type as AvFrameType;
 use ffmpeg::Error as AvError;
 use ffmpeg::Rational as AvRational;
 
-use crate::{
-    ffi::{codec_context_as, get_encoder_time_base},
-    frame::FRAME_PIXEL_FORMAT,
-    io::{private::Write, Writer},
-    options::Options,
-    Error, Locator, PixelFormat, RawFrame,
-};
-
+use crate::error::Error;
+use crate::ffi;
 #[cfg(feature = "ndarray")]
-use crate::{ffi::convert_ndarray_to_frame_rgb24, Frame, Time};
+use crate::frame::Frame;
+use crate::frame::{PixelFormat, RawFrame, FRAME_PIXEL_FORMAT};
+use crate::io::private::Write;
+use crate::io::{Writer, WriterBuilder};
+use crate::location::Location;
+use crate::options::Options;
+#[cfg(feature = "ndarray")]
+use crate::time::Time;
 
 type Result<T> = std::result::Result<T, Error>;
+
+/// Builds an [`Encoder`].
+pub struct EncoderBuilder<'a> {
+    destination: Location,
+    settings: Settings,
+    options: Option<&'a Options>,
+    format: Option<&'a str>,
+    interleaved: bool,
+}
+
+impl<'a> EncoderBuilder<'a> {
+    /// Create an encoder with the specified destination and settings.
+    ///
+    /// * `destination` - Where to encode to.
+    /// * `settings` - Encoding settings.
+    pub fn new(destination: impl Into<Location>, settings: Settings) -> Self {
+        Self {
+            destination: destination.into(),
+            settings,
+            options: None,
+            format: None,
+            interleaved: false,
+        }
+    }
+
+    /// Set the output options for the encoder.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - The output options.
+    pub fn with_options(mut self, options: &'a Options) -> Self {
+        self.options = Some(options);
+        self
+    }
+
+    /// Set the container format for the encoder.
+    ///
+    /// # Arguments
+    ///
+    /// * `format` - Container format to use.
+    pub fn with_format(mut self, format: &'a str) -> Self {
+        self.format = Some(format);
+        self
+    }
+
+    /// Set interleaved. This will cause the encoder to use interleaved write instead of normal
+    /// write.
+    pub fn interleaved(mut self) -> Self {
+        self.interleaved = true;
+        self
+    }
+
+    /// Build an [`Encoder`].
+    pub fn build(self) -> Result<Encoder> {
+        let mut writer_builder = WriterBuilder::new(self.destination);
+        if let Some(options) = self.options {
+            writer_builder = writer_builder.with_options(options);
+        }
+        if let Some(format) = self.format {
+            writer_builder = writer_builder.with_format(format);
+        }
+        Encoder::from_writer(writer_builder.build()?, self.interleaved, self.settings)
+    }
+}
 
 /// Encodes frames into a video stream.
 ///
@@ -35,12 +100,12 @@ type Result<T> = std::result::Result<T, Error>;
 ///
 /// ```ignore
 /// let encoder = Encoder::new(
-///     &PathBuf::from("video_in.mp4").into(),
+///     Path::new("video_in.mp4"),
 ///     Settings::for_h264_yuv420p(800, 600, 30.0)
 /// )
 /// .unwrap();
 ///
-/// let decoder = Decoder::new(&PathBuf::from("video_out.mkv").into()).unwrap();
+/// let decoder = Decoder::new(Path::new("video_out.mkv")).unwrap();
 /// decoder
 ///     .decode_iter()
 ///     .take_while(Result::is_ok)
@@ -66,70 +131,13 @@ pub struct Encoder {
 impl Encoder {
     const KEY_FRAME_INTERVAL: u64 = 12;
 
-    /// Create a new encoder that writes to the specified file.
+    /// Create an encoder with the specified destination and settings.
     ///
-    /// # Arguments
-    ///
-    /// * `dest` - Locator to file to encode to.
-    /// * `settings` - Encoder settings to use.
-    pub fn new(dest: &Locator, settings: Settings) -> Result<Self> {
-        Self::from_writer(Writer::new(dest)?, settings)
-    }
-
-    /// Create a new encoder that writes to the specified file with the given output options.
-    ///
-    /// # Arguments
-    ///
-    /// * `dest` - Locator to file to encode to.
-    /// * `settings` - Encoder settings to use.
-    /// * `options` - The output options.
-    pub fn new_with_options(dest: &Locator, settings: Settings, options: &Options) -> Result<Self> {
-        Self::from_writer(Writer::new_with_options(dest, options)?, settings)
-    }
-
-    /// Create a new encoder that writes to the specified file with the given format.
-    ///
-    /// # Arguments
-    ///
-    /// * `dest` - Locator to file to encode to.
-    /// * `settings` - Encoder settings to use.
-    /// * `format` - Container format to use.
-    pub fn new_with_format(dest: &Locator, settings: Settings, format: &str) -> Result<Self> {
-        Self::from_writer(Writer::new_with_format(dest, format)?, settings)
-    }
-
-    /// Create a new encoder that writes to the specified file with the given format and output
-    /// options.
-    ///
-    /// # Arguments
-    ///
-    /// * `dest` - Locator to file to encode to.
-    /// * `settings` - Encoder settings to use.
-    /// * `format` - Container format to use.
-    /// * `options` - The output options.
-    pub fn new_with_format_and_options(
-        dest: &Locator,
-        settings: Settings,
-        format: &str,
-        options: &Options,
-    ) -> Result<Self> {
-        Self::from_writer(
-            Writer::new_with_format_and_options(dest, format, options)?,
-            settings,
-        )
-    }
-
-    /// Turn the encoder into an interleaved version, that automatically reorders packets when
-    /// necessary.
-    pub fn interleaved(mut self) -> Self {
-        self.interleaved = true;
-        self
-    }
-
-    /// Get encoder time base.
+    /// * `destination` - Where to encode to.
+    /// * `settings` - Encoding settings.
     #[inline]
-    pub fn time_base(&self) -> AvRational {
-        self.encoder_time_base
+    pub fn new(destination: impl Into<Location>, settings: Settings) -> Result<Self> {
+        EncoderBuilder::new(destination, settings).build()
     }
 
     /// Encode a single `ndarray` frame.
@@ -149,7 +157,7 @@ impl Encoder {
             return Err(Error::InvalidFrameFormat);
         }
 
-        let mut frame = convert_ndarray_to_frame_rgb24(frame).map_err(Error::BackendError)?;
+        let mut frame = ffi::convert_ndarray_to_frame_rgb24(frame).map_err(Error::BackendError)?;
 
         frame.set_pts(
             source_timestamp
@@ -213,13 +221,20 @@ impl Encoder {
         Ok(())
     }
 
+    /// Get encoder time base.
+    #[inline]
+    pub fn time_base(&self) -> AvRational {
+        self.encoder_time_base
+    }
+
     /// Create an encoder from a `FileWriter` instance.
     ///
     /// # Arguments
     ///
-    /// * `writer` - `FileWriter` to create encoder from.
+    /// * `writer` - [`Writer`] to create encoder from.
+    /// * `interleaved` - Whether or not to use interleaved write.
     /// * `settings` - Encoder settings to use.
-    fn from_writer(mut writer: Writer, settings: Settings) -> Result<Self> {
+    fn from_writer(mut writer: Writer, interleaved: bool, settings: Settings) -> Result<Self> {
         let global_header = writer
             .output
             .format()
@@ -230,7 +245,7 @@ impl Encoder {
         let writer_stream_index = writer_stream.index();
 
         let mut encoder_context = match settings.codec() {
-            Some(codec) => codec_context_as(&codec)?,
+            Some(codec) => ffi::codec_context_as(&codec)?,
             None => AvContext::new(),
         };
 
@@ -248,7 +263,7 @@ impl Encoder {
         encoder.set_time_base(TIME_BASE);
 
         let encoder = encoder.open_with(settings.options().to_dict())?;
-        let encoder_time_base = get_encoder_time_base(&encoder);
+        let encoder_time_base = ffi::get_encoder_time_base(&encoder);
 
         writer_stream.set_parameters(&encoder);
 
@@ -269,7 +284,7 @@ impl Encoder {
             writer_stream_index,
             encoder,
             encoder_time_base,
-            interleaved: false,
+            interleaved,
             scaler,
             scaler_width,
             scaler_height,
@@ -365,6 +380,7 @@ impl Drop for Encoder {
 }
 
 /// Holds a logical combination of encoder settings.
+#[derive(Debug, Clone)]
 pub struct Settings {
     width: u32,
     height: u32,
@@ -380,11 +396,11 @@ impl Settings {
     /// Create encoder settings for an H264 stream with YUV420p pixel format. This will encode to
     /// arguably the most widely compatible video file since H264 is a common codec and YUV420p is
     /// the most commonly used pixel format.
-    pub fn for_h264_yuv420p(width: usize, height: usize, realtime: bool) -> Settings {
+    pub fn preset_h264_yuv420p(width: usize, height: usize, realtime: bool) -> Settings {
         let options = if realtime {
-            Options::new_h264_realtime()
+            Options::preset_h264_realtime()
         } else {
-            Options::new_h264()
+            Options::preset_h264()
         };
 
         Self {
@@ -409,7 +425,7 @@ impl Settings {
     /// # Return value
     ///
     /// A `Settings` instance with the specified configuration.+
-    pub fn for_h264_custom(
+    pub fn preset_h264_custom(
         width: usize,
         height: usize,
         pixel_format: PixelFormat,

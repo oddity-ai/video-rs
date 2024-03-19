@@ -29,14 +29,14 @@ on this (`video-rs` depends on the `ffmpeg-next` crate).
 Then, add the following to your dependencies in `Cargo.toml`:
 
 ```toml
-video-rs = "0.6"
+video-rs = "0.7"
 ```
 
 Use the `ndarray` feature to be able to use raw frames with the
 [`ndarray`](https://github.com/rust-ndarray/ndarray) crate:
 
 ```toml
-video-rs = { version = "0.6", features = ["ndarray"] }
+video-rs = { version = "0.7", features = ["ndarray"] }
 ```
 
 ## 📖 Examples
@@ -44,57 +44,45 @@ video-rs = { version = "0.6", features = ["ndarray"] }
 Decode a video and print the RGB value for the top left pixel:
 
 ```rust
-use video_rs::{self, Decoder, Locator};
+use video_rs::decode::Decoder;
+use video_rs::Url;
 
 fn main() {
     video_rs::init().unwrap();
 
-    let source = Locator::Url(
+    let source =
         "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-            .parse()
-            .unwrap(),
-    );
-
-    let mut decoder = Decoder::new(&source)
-        .expect("failed to create decoder");
+            .parse::<Url>()
+            .unwrap();
+    let mut decoder = Decoder::new(source).expect("failed to create decoder");
 
     for frame in decoder.decode_iter() {
         if let Ok((_, frame)) = frame {
-            let rgb = frame
-                .slice(ndarray::s![0, 0, ..])
-                .to_slice()
-                .unwrap();
-            println!(
-                "pixel at 0, 0: {}, {}, {}",
-                rgb[0],
-                rgb[1],
-                rgb[2],
-            );
+            let rgb = frame.slice(ndarray::s![0, 0, ..]).to_slice().unwrap();
+            println!("pixel at 0, 0: {}, {}, {}", rgb[0], rgb[1], rgb[2],);
         } else {
             break;
         }
     }
 }
-
 ```
 
 Encode a 🌈 video, using `ndarray` to create each frame:
 
 ```rust
-use std::path::PathBuf;
+use std::path::Path;
 
 use ndarray::Array3;
 
-use video_rs::{Encoder, EncoderSettings, Locator, Time};
+use video_rs::encode::{Encoder, Settings};
+use video_rs::time::Time;
 
 fn main() {
     video_rs::init().unwrap();
 
-    let destination: Locator = PathBuf::from("rainbow.mp4").into();
-    let settings = EncoderSettings::for_h264_yuv420p(1280, 720, false);
-
-    let mut encoder = Encoder::new(&destination, settings)
-        .expect("failed to create encoder");
+    let settings = Settings::preset_h264_yuv420p(1280, 720, false);
+    let mut encoder =
+        Encoder::new(Path::new("rainbow.mp4"), settings).expect("failed to create encoder");
 
     let duration: Time = Time::from_nth_of_a_second(24);
     let mut position = Time::zero();
@@ -106,8 +94,7 @@ fn main() {
             .encode(&frame, &position)
             .expect("failed to encode frame");
 
-        // Update the current position and add the inter-frame
-        // duration to it.
+        // Update the current position and add the inter-frame duration to it.
         position = position.aligned_with(&duration).add();
     }
 
@@ -115,13 +102,12 @@ fn main() {
 }
 
 fn rainbow_frame(p: f32) -> Array3<u8> {
-    // This is what generated the rainbow effect! We loop through
-    // the HSV color spectrum and convert to RGB.
+    // This is what generated the rainbow effect! We loop through the HSV color spectrum and convert
+    // to RGB.
     let rgb = hsv_to_rgb(p * 360.0, 100.0, 100.0);
 
-    // This creates a frame with height 720, width 1280 and three
-    // channels. The RGB values for each pixel are equal, and
-    // determined by the `rgb` we chose above.
+    // This creates a frame with height 720, width 1280 and three channels. The RGB values for each
+    // pixel are equal, and determined by the `rgb` we chose above.
     Array3::from_shape_fn((720, 1280, 3), |(_y, _x, c)| rgb[c])
 }
 
@@ -152,7 +138,6 @@ fn hsv_to_rgb(h: f32, s: f32, v: f32) -> [u8; 3] {
         ((b + m) * 255.0) as u8,
     ]
 }
-
 ```
 
 ## 🪲 Debugging

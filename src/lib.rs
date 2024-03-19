@@ -1,38 +1,36 @@
-mod decode;
-mod encode;
-mod error;
-mod extradata;
-mod ffi;
-mod frame;
-mod init;
-mod io;
-mod mux;
-mod options;
-mod packet;
-mod resize;
-mod rtp;
-mod stream;
-mod time;
+pub mod decode;
+pub mod encode;
+pub mod error;
+pub mod extradata;
+pub mod frame;
+pub mod hwaccel;
+pub mod init;
+pub mod io;
+pub mod location;
+pub mod mux;
+pub mod options;
+pub mod packet;
+pub mod resize;
+pub mod rtp;
+pub mod stream;
+pub mod time;
 
-pub use decode::{Decoder, DecoderSplit};
-pub use encode::{Encoder, Settings as EncoderSettings};
+mod ffi;
+mod ffi_hwaccel;
+
+pub use decode::{Decoder, DecoderBuilder};
+pub use encode::{Encoder, EncoderBuilder};
 pub use error::Error;
-pub use extradata::{Pps, Sps};
-pub use frame::PixelFormat;
-pub use frame::RawFrame;
+#[cfg(feature = "ndarray")]
+pub use frame::Frame;
 pub use init::init;
-pub use io::{Buf, Reader, Write, Writer};
-pub use io::{Locator, Url};
-pub use mux::{BufMuxer, FileMuxer, PacketizedBufMuxer};
+pub use io::{Reader, ReaderBuilder, Writer, WriterBuilder};
+pub use location::{Location, Url};
+pub use mux::{Muxer, MuxerBuilder};
 pub use options::Options;
 pub use packet::Packet;
 pub use resize::Resize;
-pub use rtp::{RtpBuf, RtpMuxer};
-pub use stream::StreamInfo;
-pub use time::{Aligned, Time};
+pub use time::Time;
 
-#[cfg(feature = "ndarray")]
-pub use frame::Frame;
-
-/// Re-export inner `ffmpeg` library.
+/// Re-export backend `ffmpeg` library.
 pub use ffmpeg_next as ffmpeg;

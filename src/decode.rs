@@ -7,25 +7,97 @@ use ffmpeg::software::scaling::{context::Context as AvScaler, flag::Flags as AvS
 use ffmpeg::util::error::EAGAIN;
 use ffmpeg::{Error as AvError, Rational as AvRational};
 
-use crate::ffi::{copy_frame_props, set_decoder_context_time_base};
-use crate::frame::FRAME_PIXEL_FORMAT;
-use crate::io::Reader;
+use crate::error::Error;
+use crate::ffi;
+use crate::ffi_hwaccel;
+#[cfg(feature = "ndarray")]
+use crate::frame::Frame;
+use crate::frame::{RawFrame, FRAME_PIXEL_FORMAT};
+use crate::hwaccel::{HardwareAccelerationContext, HardwareAccelerationDeviceType};
+use crate::io::{Reader, ReaderBuilder};
+use crate::location::Location;
 use crate::options::Options;
 use crate::packet::Packet;
+use crate::resize::Resize;
 use crate::time::Time;
-use crate::{Error, Locator, RawFrame, Resize};
-
-#[cfg(feature = "ndarray")]
-use crate::{ffi::convert_frame_to_ndarray_rgb24, Frame};
 
 type Result<T> = std::result::Result<T, Error>;
+
+/// Builds a [`Decoder`].
+pub struct DecoderBuilder<'a> {
+    source: Location,
+    options: Option<&'a Options>,
+    resize: Option<Resize>,
+    hardware_acceleration_device_type: Option<HardwareAccelerationDeviceType>,
+}
+
+impl<'a> DecoderBuilder<'a> {
+    /// Create a decoder with the specified source.
+    ///
+    /// * `source` - Source to decode.
+    pub fn new(source: impl Into<Location>) -> Self {
+        Self {
+            source: source.into(),
+            options: None,
+            resize: None,
+            hardware_acceleration_device_type: None,
+        }
+    }
+
+    /// Set custom options. Options are applied to the input.
+    ///
+    /// * `options` - Custom options.
+    pub fn with_options(mut self, options: &'a Options) -> Self {
+        self.options = Some(options);
+        self
+    }
+
+    /// Set resizing to apply to frames.
+    ///
+    /// * `resize` - Resizing to apply.
+    pub fn with_resize(mut self, resize: Resize) -> Self {
+        self.resize = Some(resize);
+        self
+    }
+
+    /// Enable hardware acceleration with the specified device type.
+    ///
+    /// * `device_type` - Device to use for hardware acceleration.
+    pub fn with_hardware_acceleration(
+        mut self,
+        device_type: HardwareAccelerationDeviceType,
+    ) -> Self {
+        self.hardware_acceleration_device_type = Some(device_type);
+        self
+    }
+
+    /// Build [`Decoder`].
+    pub fn build(self) -> Result<Decoder> {
+        let mut reader_builder = ReaderBuilder::new(self.source);
+        if let Some(options) = self.options {
+            reader_builder = reader_builder.with_options(options);
+        }
+        let reader = reader_builder.build()?;
+        let reader_stream_index = reader.best_video_stream_index()?;
+        Ok(Decoder {
+            decoder: DecoderSplit::new(
+                &reader,
+                reader_stream_index,
+                self.resize,
+                self.hardware_acceleration_device_type,
+            )?,
+            reader,
+            reader_stream_index,
+        })
+    }
+}
 
 /// Decode video files and streams.
 ///
 /// # Example
 ///
 /// ```ignore
-/// let decoder = Decoder::new(&PathBuf::from("video.mp4").into()).unwrap();
+/// let decoder = Decoder::new(Path::new("video.mp4")).unwrap();
 /// decoder
 ///     .decode_iter()
 ///     .take_while(Result::is_ok)
@@ -39,68 +111,14 @@ pub struct Decoder {
 }
 
 impl Decoder {
-    /// Create a new decoder for the specified file.
+    /// Create a decoder to decode the specified source.
     ///
     /// # Arguments
     ///
-    /// * `source` - Locator to file to decode.
-    pub fn new(source: &Locator) -> Result<Self> {
-        let reader = Reader::new(source)?;
-        let reader_stream_index = reader.best_video_stream_index()?;
-        Ok(Self {
-            decoder: DecoderSplit::new(&reader, reader_stream_index, None)?,
-            reader,
-            reader_stream_index,
-        })
-    }
-
-    /// Create a new decoder for the specified file with input options.
-    ///
-    /// # Arguments
-    ///
-    /// * `source` - Locator to file to decode.
-    /// * `options` - The input options.
-    pub fn new_with_options(source: &Locator, options: &Options) -> Result<Self> {
-        let reader = Reader::new_with_options(source, options)?;
-        let reader_stream_index = reader.best_video_stream_index()?;
-        Ok(Self {
-            decoder: DecoderSplit::new(&reader, reader_stream_index, None)?,
-            reader,
-            reader_stream_index,
-        })
-    }
-
-    /// Create a new decoder for the specified file with input options and custom dimensions. Each
-    /// frame will be resized to the given dimensions.
-    ///
-    /// # Arguments
-    ///
-    /// * `source` - Locator to file to decode.
-    /// * `options` - The input options.
-    /// * `resize` - How to resize frames.
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// let decoder = Decoder::new_with_options_and_resize(
-    ///     &PathBuf::from("video.mp4").into(),
-    ///     Options::new_with_rtsp_transport_tcp(),
-    ///     Resize::Exact(800, 600),
-    /// )
-    /// .unwrap();
-    /// ```
-    pub fn new_with_options_and_resize(
-        source: &Locator,
-        options: &Options,
-        resize: Resize,
-    ) -> Result<Self> {
-        let reader = Reader::new_with_options(source, options)?;
-        let reader_stream_index = reader.best_video_stream_index()?;
-        Ok(Self {
-            decoder: DecoderSplit::new(&reader, reader_stream_index, Some(resize))?,
-            reader,
-            reader_stream_index,
-        })
+    /// * `source` - Source to decode.
+    #[inline]
+    pub fn new(source: impl Into<Location>) -> Result<Self> {
+        DecoderBuilder::new(source).build()
     }
 
     /// Get decoder time base.
@@ -248,12 +266,92 @@ impl Decoder {
 pub struct DecoderSplit {
     decoder: AvDecoder,
     decoder_time_base: AvRational,
-    scaler: AvScaler,
+    hwaccel_context: Option<HardwareAccelerationContext>,
+    scaler: Option<AvScaler>,
     size: (u32, u32),
     size_out: (u32, u32),
 }
 
 impl DecoderSplit {
+    /// Create a new [`DecoderSplit`].
+    ///
+    /// # Arguments
+    ///
+    /// * `reader` - [`Reader`] to initialize decoder from.
+    /// * `resize` - Optional resize strategy to apply to frames.
+    pub fn new(
+        reader: &Reader,
+        reader_stream_index: usize,
+        resize: Option<Resize>,
+        hwaccel_device_type: Option<HardwareAccelerationDeviceType>,
+    ) -> Result<Self> {
+        let reader_stream = reader
+            .input
+            .stream(reader_stream_index)
+            .ok_or(AvError::StreamNotFound)?;
+
+        let mut decoder = AvContext::new();
+        ffi::set_decoder_context_time_base(&mut decoder, reader_stream.time_base());
+        decoder.set_parameters(reader_stream.parameters())?;
+
+        let hwaccel_context = match hwaccel_device_type {
+            Some(device_type) => Some(HardwareAccelerationContext::new(&mut decoder, device_type)?),
+            None => None,
+        };
+
+        let decoder = decoder.decoder().video()?;
+        let decoder_time_base = decoder.time_base();
+
+        if decoder.format() == AvPixel::None || decoder.width() == 0 || decoder.height() == 0 {
+            return Err(Error::MissingCodecParameters);
+        }
+
+        let (resize_width, resize_height) = match resize {
+            Some(resize) => resize
+                .compute_for((decoder.width(), decoder.height()))
+                .ok_or(Error::InvalidResizeParameters)?,
+            None => (decoder.width(), decoder.height()),
+        };
+
+        let scaler_input_format = if hwaccel_context.is_some() {
+            // If hardware acceleration is enabled, we pre-converted the pixel format when
+            // downloading the frame from the device.
+            FRAME_PIXEL_FORMAT
+        } else {
+            decoder.format()
+        };
+
+        let is_scaler_needed = !(scaler_input_format == FRAME_PIXEL_FORMAT
+            && decoder.width() == resize_width
+            && decoder.height() == resize_height);
+
+        let scaler = if is_scaler_needed {
+            Some(AvScaler::get(
+                scaler_input_format,
+                decoder.width(),
+                decoder.height(),
+                FRAME_PIXEL_FORMAT,
+                resize_width,
+                resize_height,
+                AvScalerFlags::AREA,
+            )?)
+        } else {
+            None
+        };
+
+        let size = (decoder.width(), decoder.height());
+        let size_out = (resize_width, resize_height);
+
+        Ok(Self {
+            decoder,
+            decoder_time_base,
+            hwaccel_context,
+            scaler,
+            size,
+            size_out,
+        })
+    }
+
     /// Get decoder time base.
     #[inline]
     pub fn time_base(&self) -> AvRational {
@@ -277,7 +375,7 @@ impl DecoderSplit {
                 // encoder will use when encoding for the `PTS` field.
                 let timestamp = Time::new(Some(frame.packet().dts), self.decoder_time_base);
                 let frame =
-                    convert_frame_to_ndarray_rgb24(&mut frame).map_err(Error::BackendError)?;
+                    ffi::convert_frame_to_ndarray_rgb24(&mut frame).map_err(Error::BackendError)?;
 
                 Ok(Some((timestamp, frame)))
             }
@@ -303,14 +401,29 @@ impl DecoderSplit {
 
         match self.decoder_receive_frame()? {
             Some(frame) => {
-                let mut frame_scaled = RawFrame::empty();
-                self.scaler
-                    .run(&frame, &mut frame_scaled)
-                    .map_err(Error::BackendError)?;
+                let frame = match self.hwaccel_context.as_ref() {
+                    Some(hwaccel_context) if hwaccel_context.format() == frame.format() => {
+                        let mut frame_downloaded = RawFrame::empty();
+                        frame_downloaded.set_format(FRAME_PIXEL_FORMAT);
+                        ffi_hwaccel::hwdevice_transfer_frame(&mut frame_downloaded, &frame)?;
+                        frame_downloaded
+                    }
+                    _ => frame,
+                };
 
-                copy_frame_props(&frame, &mut frame_scaled);
+                let frame = match self.scaler.as_mut() {
+                    Some(scaler) => {
+                        let mut frame_scaled = RawFrame::empty();
+                        scaler
+                            .run(&frame, &mut frame_scaled)
+                            .map_err(Error::BackendError)?;
+                        ffi::copy_frame_props(&frame, &mut frame_scaled);
+                        frame_scaled
+                    }
+                    _ => frame,
+                };
 
-                Ok(Some(frame_scaled))
+                Ok(Some(frame))
             }
             None => Ok(None),
         }
@@ -327,61 +440,6 @@ impl DecoderSplit {
     #[inline(always)]
     pub fn size_out(&self) -> (u32, u32) {
         self.size_out
-    }
-
-    /// Create a new [`DecoderSplit`].
-    ///
-    /// # Arguments
-    ///
-    /// * `reader` - [`Reader`] to initialize decoder from.
-    /// * `resize` - Optional resize strategy to apply to frames.
-    pub fn new(
-        reader: &Reader,
-        reader_stream_index: usize,
-        resize: Option<Resize>,
-    ) -> Result<Self> {
-        let reader_stream = reader
-            .input
-            .stream(reader_stream_index)
-            .ok_or(AvError::StreamNotFound)?;
-
-        let mut decoder = AvContext::new();
-        set_decoder_context_time_base(&mut decoder, reader_stream.time_base());
-        decoder.set_parameters(reader_stream.parameters())?;
-        let decoder = decoder.decoder().video()?;
-        let decoder_time_base = decoder.time_base();
-
-        let (resize_width, resize_height) = match resize {
-            Some(resize) => resize
-                .compute_for((decoder.width(), decoder.height()))
-                .ok_or(Error::InvalidResizeParameters)?,
-            None => (decoder.width(), decoder.height()),
-        };
-
-        if decoder.format() == AvPixel::None || decoder.width() == 0 || decoder.height() == 0 {
-            return Err(Error::MissingCodecParameters);
-        }
-
-        let scaler = AvScaler::get(
-            decoder.format(),
-            decoder.width(),
-            decoder.height(),
-            FRAME_PIXEL_FORMAT,
-            resize_width,
-            resize_height,
-            AvScalerFlags::AREA,
-        )?;
-
-        let size = (decoder.width(), decoder.height());
-        let size_out = (resize_width, resize_height);
-
-        Ok(Self {
-            decoder,
-            decoder_time_base,
-            scaler,
-            size,
-            size_out,
-        })
     }
 
     /// Pull a decoded frame from the decoder. This function also implements retry mechanism in case
