@@ -471,8 +471,6 @@ unsafe extern "C" fn log_callback(
     #[cfg(all(target_arch = "x86_64", target_family = "unix"))] vl: *mut __va_list_tag,
     #[cfg(not(all(target_arch = "x86_64", target_family = "unix")))] vl: va_list,
 ) {
-    static mut PRINT_PREFIX: std::ffi::c_int = 1;
-
     // Check whether or not the message would be printed at all.
     let event_would_log = match level_no {
         // These are all error states.
@@ -491,6 +489,7 @@ unsafe extern "C" fn log_callback(
         // Allocate some memory for the log line (might be truncated). 1024 bytes is the number used
         // by ffmpeg itself, so it should be mostly fine.
         let mut line = [0; 1024];
+        let mut print_prefix: std::ffi::c_int = 1;
         // Use the ffmpeg default formatting.
         let ret = av_log_format_line2(
             avcl,
@@ -499,7 +498,7 @@ unsafe extern "C" fn log_callback(
             vl,
             line.as_mut_ptr(),
             (line.len()) as std::ffi::c_int,
-            (&mut PRINT_PREFIX) as *mut std::ffi::c_int,
+            (&mut print_prefix) as *mut std::ffi::c_int,
         );
         // Simply discard the log message if formatting fails.
         if ret > 0 {
