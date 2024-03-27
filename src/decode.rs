@@ -23,6 +23,9 @@ use crate::time::Time;
 
 type Result<T> = std::result::Result<T, Error>;
 
+/// Always use NV12 pixel format with hardware acceleration, then rescale later.
+static HWACCEL_PIXEL_FORMAT: AvPixel = AvPixel::NV12;
+
 /// Builds a [`Decoder`].
 pub struct DecoderBuilder<'a> {
     source: Location,
@@ -314,9 +317,7 @@ impl DecoderSplit {
         };
 
         let scaler_input_format = if hwaccel_context.is_some() {
-            // If hardware acceleration is enabled, we pre-converted the pixel format when
-            // downloading the frame from the device.
-            FRAME_PIXEL_FORMAT
+            HWACCEL_PIXEL_FORMAT
         } else {
             decoder.format()
         };
@@ -404,7 +405,7 @@ impl DecoderSplit {
                 let frame = match self.hwaccel_context.as_ref() {
                     Some(hwaccel_context) if hwaccel_context.format() == frame.format() => {
                         let mut frame_downloaded = RawFrame::empty();
-                        frame_downloaded.set_format(FRAME_PIXEL_FORMAT);
+                        frame_downloaded.set_format(HWACCEL_PIXEL_FORMAT);
                         ffi_hwaccel::hwdevice_transfer_frame(&mut frame_downloaded, &frame)?;
                         ffi::copy_frame_props(&frame, &mut frame_downloaded);
                         frame_downloaded
