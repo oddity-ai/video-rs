@@ -18,7 +18,7 @@ jobs:
 
     strategy:
       matrix:
-        ffmpeg_version: ["4.3", "4.4", "5.0", "5.1", "6.0"]
+        ffmpeg_version: ["4.3", "4.4", "5.0", "5.1", "6.0", "6.1", "7.0"]
       fail-fast: false
 
     steps:
