@@ -92,8 +92,11 @@ impl HardwareAccelerationDeviceType {
             ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_OPENCL => Some(Self::OpenCl),
             ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_MEDIACODEC => Some(Self::MeiaCodec),
             ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_VULKAN => Some(Self::Vulkan),
-            // ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_D3D12VA => Self::D3D12Va,
             ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_NONE => None,
+            // FIXME: Find a way to handle the new variants in ffmpeg 7 without breaking backwards
+            // compatibility...
+            #[allow(unreachable_patterns)]
+            _ => unimplemented!(),
         }
     }
 }
