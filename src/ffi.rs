@@ -141,7 +141,13 @@ pub fn output_raw_packetized_buf_start(
             // No `read_packet`.
             None,
             // Passthrough for `write_packet`.
-            Some(output_raw_buf_start_callback),
+            // XXX: Doing a manual transmute here to match the expected callback function
+            // signature. Since it changed since ffmpeg 7 and we don't know during compile time
+            // what verion we're dealing with, this trick will convert to the either the signature
+            // where the buffer argument is `*const u8` or `*mut u8`.
+            Some(std::mem::transmute::<*const (), _>(
+                output_raw_buf_start_callback as _,
+            )),
             // No `seek`.
             None,
         );
@@ -436,16 +442,11 @@ pub fn init_logging() {
     }
 }
 
-#[cfg(feature = "ffmpeg_7_0")]
-type __AvioContextWritePacketCbParam2Type = *const u8;
-#[cfg(not(feature = "ffmpeg_7_0"))]
-type __AvioContextWritePacketCbParam2Type = *mut u8;
-
 /// Passthrough function that is passed to `libavformat` in `avio_alloc_context` and pushes buffers
 /// from a packetized stream onto the packet buffer held in `opaque`.
 extern "C" fn output_raw_buf_start_callback(
     opaque: *mut std::ffi::c_void,
-    buffer: __AvioContextWritePacketCbParam2Type,
+    buffer: *const u8,
     buffer_size: i32,
 ) -> i32 {
     unsafe {
