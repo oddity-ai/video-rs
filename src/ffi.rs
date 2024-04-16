@@ -141,7 +141,7 @@ pub fn output_raw_packetized_buf_start(
             // No `read_packet`.
             None,
             // Passthrough for `write_packet`.
-            Some(output_raw_buf_start_callback),
+            Some(output_raw_buf_start_callback as _),
             // No `seek`.
             None,
         );
