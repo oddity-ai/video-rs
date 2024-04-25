@@ -25,7 +25,7 @@ impl Options {
     /// 4 seconds.
     ///
     /// This sets the `rtsp_transport` to `tcp` in ffmpeg options, it also sets `rw_timeout` to
-    /// `4000000` and `stimeout` to `4000000`.
+    /// lower (more sane) values.
     pub fn preset_rtsp_transport_tcp_and_sane_timeouts() -> Self {
         let mut opts = AvDictionary::new();
         opts.set("rtsp_transport", "tcp");
