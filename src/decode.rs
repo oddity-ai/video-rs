@@ -219,6 +219,22 @@ impl Decoder {
         })
     }
 
+    /// Seek in reader.
+    ///
+    /// See [`Reader::seek`](crate::io::Reader::seek) for more information.
+    #[inline]
+    pub fn seek(&mut self, timestamp_milliseconds: i64) -> Result<()> {
+        self.reader.seek(timestamp_milliseconds)
+    }
+
+    /// Seek to start of reader.
+    ///
+    /// See [`Reader::seek_to_start`](crate::io::Reader::seek_to_start) for more information.
+    #[inline]
+    pub fn seek_to_start(&mut self) -> Result<()> {
+        self.reader.seek_to_start()
+    }
+
     /// Split the decoder into a decoder (of type [`DecoderSplit`]) and a [`Reader`].
     ///
     /// This allows the caller to detach stream reading from decoding, which is useful for advanced
