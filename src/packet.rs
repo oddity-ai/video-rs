@@ -39,21 +39,21 @@ impl Packet {
 
     /// Set packet PTS (presentation timestamp).
     #[inline]
-    pub fn set_pts(&mut self, timestamp: &Time) {
+    pub fn set_pts(&mut self, timestamp: Time) {
         self.inner
             .set_pts(timestamp.aligned_with_rational(self.time_base).into_value());
     }
 
     /// Set packet DTS (decoder timestamp).
     #[inline]
-    pub fn set_dts(&mut self, timestamp: &Time) {
+    pub fn set_dts(&mut self, timestamp: Time) {
         self.inner
             .set_dts(timestamp.aligned_with_rational(self.time_base).into_value());
     }
 
     /// Set duration.
     #[inline]
-    pub fn set_duration(&mut self, timestamp: &Time) {
+    pub fn set_duration(&mut self, timestamp: Time) {
         if let Some(duration) = timestamp.aligned_with_rational(self.time_base).into_value() {
             self.inner.set_duration(duration);
         }

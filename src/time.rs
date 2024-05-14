@@ -121,7 +121,7 @@ impl Time {
     /// # Return value
     ///
     /// Two timestamps that are aligned.
-    pub fn aligned_with(&self, rhs: &Time) -> Aligned {
+    pub fn aligned_with(&self, rhs: Time) -> Aligned {
         Aligned {
             lhs: self.time,
             rhs: rhs
@@ -329,7 +329,7 @@ mod tests {
     fn test_aligned_with() {
         let a = Time::from_units(3, 16);
         let b = Time::from_units(1, 8);
-        let aligned = a.aligned_with(&b);
+        let aligned = a.aligned_with(b);
         assert_eq!(aligned.lhs, Some(3));
         assert_eq!(aligned.rhs, Some(2));
     }
@@ -338,7 +338,7 @@ mod tests {
     fn test_into_aligned_with() {
         let a = Time::from_units(2, 7);
         let b = Time::from_units(2, 3);
-        let aligned = a.aligned_with(&b);
+        let aligned = a.aligned_with(b);
         assert_eq!(aligned.lhs, Some(2));
         assert_eq!(aligned.rhs, Some(5));
     }
@@ -379,14 +379,14 @@ mod tests {
     fn test_add() {
         let a = Time::from_secs(0.2);
         let b = Time::from_secs(0.3);
-        assert_eq!(a.aligned_with(&b).add(), Time::from_secs(0.5));
+        assert_eq!(a.aligned_with(b).add(), Time::from_secs(0.5));
     }
 
     #[test]
     fn test_subtract() {
         let a = Time::from_secs(0.8);
         let b = Time::from_secs(0.4);
-        assert_eq!(a.aligned_with(&b).subtract(), Time::from_secs(0.4));
+        assert_eq!(a.aligned_with(b).subtract(), Time::from_secs(0.4));
     }
 
     #[test]
@@ -394,7 +394,7 @@ mod tests {
         let a = Time::from_secs(2.0);
         let b = Time::from_secs(0.25);
         assert_eq!(
-            a.aligned_with(&b).apply(|x, y| (2 * x) + (3 * y)),
+            a.aligned_with(b).apply(|x, y| (2 * x) + (3 * y)),
             Time::from_secs(4.75)
         );
     }
@@ -404,7 +404,7 @@ mod tests {
         let a = Time::new(Some(3), AvRational::new(2, 32));
         let b = Time::from_nth_of_a_second(4);
         assert!(
-            (a.aligned_with(&b).apply(|x, y| x + y).as_secs()
+            (a.aligned_with(b).apply(|x, y| x + y).as_secs()
                 - Time::from_secs(7.0 / 16.0).as_secs())
             .abs()
                 < 0.001

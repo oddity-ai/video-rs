@@ -148,7 +148,7 @@ impl Encoder {
     /// * `source_timestamp` - Frame timestamp of original source. This is necessary to make sure
     ///   the output will be timed correctly.
     #[cfg(feature = "ndarray")]
-    pub fn encode(&mut self, frame: &Frame, source_timestamp: &Time) -> Result<()> {
+    pub fn encode(&mut self, frame: &Frame, source_timestamp: Time) -> Result<()> {
         let (height, width, channels) = frame.dim();
         if height != self.scaler_height as usize
             || width != self.scaler_width as usize
