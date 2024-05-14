@@ -15,7 +15,7 @@ use ffmpeg::Rational as AvRational;
 ///
 /// A [`Time`] object may be aligned with another [`Time`] object, which produces an [`Aligned`]
 /// object, on which arithmetic operations can be performed.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Time {
     time: Option<i64>,
     time_base: AvRational,
@@ -106,6 +106,11 @@ impl Time {
         self.time.is_some()
     }
 
+    /// Whether or not the [`Time`] value is `AV_NOPTS_VALUE`.
+    pub fn has_no_pts(&self) -> bool {
+        self.time == Some(ffmpeg::ffi::AV_NOPTS_VALUE)
+    }
+
     /// Align the timestamp with another timestamp, which will convert the `rhs` timestamp to the
     /// same time base, such that operations can be performed upon the aligned timestamps.
     ///
@@ -187,7 +192,7 @@ impl From<Duration> for Time {
 impl From<Time> for Duration {
     /// Convert from a [`Time`] to a Rust-native [`Duration`].
     fn from(timestamp: Time) -> Self {
-        Duration::from_secs_f64(timestamp.as_secs_f64())
+        Duration::from_secs_f64(timestamp.as_secs_f64().max(0.0))
     }
 }
 
@@ -404,5 +409,20 @@ mod tests {
             .abs()
                 < 0.001
         );
+    }
+
+    #[test]
+    fn test_negative_into_duration_clamps() {
+        assert_eq!(
+            Duration::from(Time::new(Some(-100), AvRational::new(0, 0))),
+            Duration::ZERO,
+        )
+    }
+
+    #[test]
+    fn test_av_no_pts_value() {
+        let nopts = Time::new(Some(ffmpeg::ffi::AV_NOPTS_VALUE), AvRational::new(0, 0));
+        assert_eq!(nopts.into_value(), Some(ffmpeg::ffi::AV_NOPTS_VALUE));
+        assert_eq!(Duration::from(nopts).as_secs_f32(), 0.0);
     }
 }
