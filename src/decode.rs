@@ -341,16 +341,13 @@ impl DecoderSplit {
         let is_scaler_needed = !(scaler_input_format == FRAME_PIXEL_FORMAT
             && decoder.width() == resize_width
             && decoder.height() == resize_height);
-
         let scaler = if is_scaler_needed {
-            Some(AvScaler::get(
+            Some(Self::scaler(
                 scaler_input_format,
                 decoder.width(),
                 decoder.height(),
-                FRAME_PIXEL_FORMAT,
                 resize_width,
                 resize_height,
-                AvScalerFlags::AREA,
             )?)
         } else {
             None
@@ -420,24 +417,13 @@ impl DecoderSplit {
             Some(frame) => {
                 let frame = match self.hwaccel_context.as_ref() {
                     Some(hwaccel_context) if hwaccel_context.format() == frame.format() => {
-                        let mut frame_downloaded = RawFrame::empty();
-                        frame_downloaded.set_format(HWACCEL_PIXEL_FORMAT);
-                        ffi_hwaccel::hwdevice_transfer_frame(&mut frame_downloaded, &frame)?;
-                        ffi::copy_frame_props(&frame, &mut frame_downloaded);
-                        frame_downloaded
+                        Self::download_frame(&frame)?
                     }
                     _ => frame,
                 };
 
                 let frame = match self.scaler.as_mut() {
-                    Some(scaler) => {
-                        let mut frame_scaled = RawFrame::empty();
-                        scaler
-                            .run(&frame, &mut frame_scaled)
-                            .map_err(Error::BackendError)?;
-                        ffi::copy_frame_props(&frame, &mut frame_scaled);
-                        frame_scaled
-                    }
+                    Some(scaler) => Self::rescale_frame(&frame, scaler)?,
                     _ => frame,
                 };
 
@@ -460,6 +446,37 @@ impl DecoderSplit {
         self.size_out
     }
 
+    /// Download frame from foreign hardware acceleration device.
+    fn download_frame(frame: &RawFrame) -> Result<RawFrame> {
+        let mut frame_downloaded = RawFrame::empty();
+        frame_downloaded.set_format(HWACCEL_PIXEL_FORMAT);
+        ffi_hwaccel::hwdevice_transfer_frame(&mut frame_downloaded, frame)?;
+        ffi::copy_frame_props(frame, &mut frame_downloaded);
+        Ok(frame_downloaded)
+    }
+
+    /// Rescale frame with the scaler.
+    fn rescale_frame(frame: &RawFrame, scaler: &mut AvScaler) -> Result<RawFrame> {
+        // XXX: This happens from time to time when the decoder initially reports the incorrect
+        // pixel format. Not sure why. We can get around it here by just resetting the scaler to
+        // accept this new format...
+        if frame.format() != scaler.input().format {
+            *scaler = Self::scaler(
+                scaler.input().width,
+                scaler.input().height,
+                frame.format(),
+                scaler.output().width,
+                scaler.output().height,
+            )?;
+        }
+        let mut frame_scaled = RawFrame::empty();
+        scaler
+            .run(frame, &mut frame_scaled)
+            .map_err(Error::BackendError)?;
+        ffi::copy_frame_props(frame, &mut frame_scaled);
+        Ok(frame_scaled)
+    }
+
     /// Pull a decoded frame from the decoder. This function also implements retry mechanism in case
     /// the decoder signals `EAGAIN`.
     fn decoder_receive_frame(&mut self) -> Result<Option<RawFrame>> {
@@ -470,6 +487,34 @@ impl DecoderSplit {
             Err(AvError::Other { errno }) if errno == EAGAIN => Ok(None),
             Err(err) => Err(err.into()),
         }
+    }
+
+    /// Reinitialize the scaler for example when the input changed.
+    ///
+    /// # Arguments
+    ///
+    /// * `input_width` - Input frame width.
+    /// * `input_height` - Input frame height.
+    /// * `input_pixfmt` - Input frame pixel format.
+    /// * `output_width` - Output frame width.
+    /// * `output_height` - Output frame height.
+    fn scaler(
+        input_pixfmt: AvPixel,
+        input_width: u32,
+        input_height: u32,
+        output_width: u32,
+        output_height: u32,
+    ) -> Result<AvScaler> {
+        AvScaler::get(
+            input_pixfmt,
+            input_width,
+            input_height,
+            FRAME_PIXEL_FORMAT,
+            output_width,
+            output_height,
+            AvScalerFlags::AREA,
+        )
+        .map_err(Error::BackendError)
     }
 }
 
