@@ -462,9 +462,9 @@ impl DecoderSplit {
         // accept this new format...
         if frame.format() != scaler.input().format {
             *scaler = Self::scaler(
+                frame.format(),
                 scaler.input().width,
                 scaler.input().height,
-                frame.format(),
                 scaler.output().width,
                 scaler.output().height,
             )?;
