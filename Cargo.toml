@@ -20,3 +20,6 @@ ffmpeg-next = { version = "7.0", features = [
 ] }
 url = "2"
 ndarray = { version = "0.15", optional = true }
+
+[features]
+no_vulkan = []
