@@ -59,6 +59,7 @@ pub enum HardwareAccelerationDeviceType {
     /// MediaCodec
     MeiaCodec,
     /// Vulkan
+    #[cfg(not(feature = "no_vulkan"))]
     Vulkan,
     /// Direct3D 12 Video Acceleration
     D3D12Va,
@@ -91,6 +92,7 @@ impl HardwareAccelerationDeviceType {
             ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_DRM => Some(Self::Drm),
             ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_OPENCL => Some(Self::OpenCl),
             ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_MEDIACODEC => Some(Self::MeiaCodec),
+            #[cfg(not(feature = "no_vulkan"))]
             ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_VULKAN => Some(Self::Vulkan),
             ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_NONE => None,
             // FIXME: Find a way to handle the new variants in ffmpeg 7 without breaking backwards
@@ -134,6 +136,7 @@ impl From<HardwareAccelerationDeviceType> for ffmpeg::ffi::AVHWDeviceType {
             HardwareAccelerationDeviceType::MeiaCodec => {
                 ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_MEDIACODEC
             }
+            #[cfg(not(feature = "no_vulkan"))]
             HardwareAccelerationDeviceType::Vulkan => {
                 ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_VULKAN
             }
