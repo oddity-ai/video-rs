@@ -126,6 +126,7 @@ pub struct Encoder {
     frame_count: u64,
     have_written_header: bool,
     have_written_trailer: bool,
+    key_frame_interval: u64,
 }
 
 impl Encoder {
@@ -190,7 +191,7 @@ impl Encoder {
         // Reformat frame to target pixel format.
         let mut frame = self.scale(frame)?;
         // Producer key frame every once in a while
-        if self.frame_count % Self::KEY_FRAME_INTERVAL == 0 {
+        if self.frame_count % self.key_frame_interval == 0 {
             frame.set_kind(AvFrameType::I);
         }
 
@@ -225,6 +226,15 @@ impl Encoder {
     #[inline]
     pub fn time_base(&self) -> AvRational {
         self.encoder_time_base
+    }
+    
+    /// Changes the key frame interval.
+    ///
+    /// # Arguments
+    ///
+    /// * `key_frame_interval` - The new key frame interval.
+    pub fn set_key_frame_interval(&mut self, key_frame_interval: u64) {
+        self.key_frame_interval = key_frame_interval;
     }
 
     /// Create an encoder from a `FileWriter` instance.
@@ -291,6 +301,7 @@ impl Encoder {
             frame_count: 0,
             have_written_header: false,
             have_written_trailer: false,
+            key_frame_interval: 12,
         })
     }
 
