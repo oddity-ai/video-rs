@@ -12,6 +12,3 @@ pub type RawFrame = AvFrame;
 /// Re-export frame type as ndarray.
 #[cfg(feature = "ndarray")]
 pub type Frame = crate::ffi::FrameArray;
-
-/// Default frame pixel format.
-pub(crate) const FRAME_PIXEL_FORMAT: AvPixel = AvPixel::RGB24;

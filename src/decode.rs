@@ -12,7 +12,7 @@ use crate::ffi;
 use crate::ffi_hwaccel;
 #[cfg(feature = "ndarray")]
 use crate::frame::Frame;
-use crate::frame::{RawFrame, FRAME_PIXEL_FORMAT};
+use crate::frame::RawFrame;
 use crate::hwaccel::{HardwareAccelerationContext, HardwareAccelerationDeviceType};
 use crate::io::{Reader, ReaderBuilder};
 use crate::location::Location;
@@ -338,7 +338,17 @@ impl DecoderSplit {
             decoder.format()
         };
 
-        let is_scaler_needed = !(scaler_input_format == FRAME_PIXEL_FORMAT
+        let mut scaler_output_format = AvPixel::RGB24;
+        
+        if let Some(descriptor) = scaler_input_format.descriptor() {
+            let descriptor = unsafe { *descriptor.as_ptr() };
+
+            if descriptor.flags & ffmpeg::ffi::AV_PIX_FMT_FLAG_ALPHA as u64 > 0 {
+                scaler_output_format = AvPixel::RGB32;
+            }
+        };
+
+        let is_scaler_needed = !(scaler_input_format == scaler_output_format
             && decoder.width() == resize_width
             && decoder.height() == resize_height);
         let scaler = if is_scaler_needed {
@@ -347,7 +357,7 @@ impl DecoderSplit {
                     scaler_input_format,
                     decoder.width(),
                     decoder.height(),
-                    FRAME_PIXEL_FORMAT,
+                    scaler_output_format,
                     resize_width,
                     resize_height,
                     AvScalerFlags::AREA,
@@ -394,7 +404,7 @@ impl DecoderSplit {
                 // encoder will use when encoding for the `PTS` field.
                 let timestamp = Time::new(Some(frame.packet().dts), self.decoder_time_base);
                 let frame =
-                    ffi::convert_frame_to_ndarray_rgb24(&mut frame).map_err(Error::BackendError)?;
+                    ffi::convert_frame_to_ndarray_rgb(&mut frame).map_err(Error::BackendError)?;
 
                 Ok(Some((timestamp, frame)))
             }

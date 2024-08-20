@@ -20,7 +20,7 @@ use crate::error::Error;
 use crate::ffi;
 #[cfg(feature = "ndarray")]
 use crate::frame::Frame;
-use crate::frame::{PixelFormat, RawFrame, FRAME_PIXEL_FORMAT};
+use crate::frame::{PixelFormat, RawFrame};
 use crate::io::private::Write;
 use crate::io::{Writer, WriterBuilder};
 use crate::location::Location;
@@ -152,12 +152,12 @@ impl Encoder {
         let (height, width, channels) = frame.dim();
         if height != self.scaler_height as usize
             || width != self.scaler_width as usize
-            || channels != 3
+            || (channels != 3 && channels != 4)
         {
             return Err(Error::InvalidFrameFormat);
         }
 
-        let mut frame = ffi::convert_ndarray_to_frame_rgb24(frame).map_err(Error::BackendError)?;
+        let mut frame = ffi::convert_ndarray_to_frame_rgb(frame).map_err(Error::BackendError)?;
 
         frame.set_pts(
             source_timestamp
@@ -176,7 +176,7 @@ impl Encoder {
     pub fn encode_raw(&mut self, frame: RawFrame) -> Result<()> {
         if frame.width() != self.scaler_width
             || frame.height() != self.scaler_height
-            || frame.format() != FRAME_PIXEL_FORMAT
+            || (frame.format() != AvPixel::RGB24 && frame.format() != AvPixel::RGB32)
         {
             return Err(Error::InvalidFrameFormat);
         }
@@ -270,7 +270,7 @@ impl Encoder {
         let scaler_width = encoder.width();
         let scaler_height = encoder.height();
         let scaler = AvScaler::get(
-            FRAME_PIXEL_FORMAT,
+            settings.input_pixel_format,
             scaler_width,
             scaler_height,
             encoder.format(),
@@ -384,7 +384,8 @@ impl Drop for Encoder {
 pub struct Settings {
     width: u32,
     height: u32,
-    pixel_format: AvPixel,
+    input_pixel_format: AvPixel,
+    output_pixel_format: AvPixel,
     options: Options,
 }
 
@@ -406,7 +407,8 @@ impl Settings {
         Self {
             width: width as u32,
             height: height as u32,
-            pixel_format: AvPixel::YUV420P,
+            input_pixel_format: AvPixel::RGB24,
+            output_pixel_format: AvPixel::YUV420P,
             options,
         }
     }
@@ -434,7 +436,8 @@ impl Settings {
         Self {
             width: width as u32,
             height: height as u32,
-            pixel_format,
+            input_pixel_format: AvPixel::RGB24,
+            output_pixel_format: pixel_format,
             options,
         }
     }
@@ -451,7 +454,7 @@ impl Settings {
     fn apply_to(&self, encoder: &mut AvVideo) {
         encoder.set_width(self.width);
         encoder.set_height(self.height);
-        encoder.set_format(self.pixel_format);
+        encoder.set_format(self.output_pixel_format);
         encoder.set_frame_rate(Some((Self::FRAME_RATE, 1)));
     }
 
