@@ -19,4 +19,4 @@ ffmpeg-next = { version = "7.0", features = [
     "software-scaling",
 ] }
 url = "2"
-ndarray = { version = "0.15", optional = true }
+ndarray = { version = "0.16", optional = true }
