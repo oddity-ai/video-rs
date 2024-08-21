@@ -259,7 +259,7 @@ pub fn copy_frame_props(src: &Frame, dst: &mut Frame) {
 #[cfg(feature = "ndarray")]
 pub type FrameArray = Array3<u8>;
 
-/// Converts an `ndarray` to an RGB24 / RGB32 video `AVFrame` for ffmpeg.
+/// Converts an `ndarray` to an RGB24 / RGBA video `AVFrame` for ffmpeg.
 ///
 /// # Arguments
 ///
@@ -276,7 +276,7 @@ pub fn convert_ndarray_to_frame_rgb(frame_array: &FrameArray) -> Result<Frame, E
         let (frame_height, frame_width, frame_channels) = frame_array.dim();
 
         let (frame_format, frame_format_raw) = if frame_channels == 4 {
-            (Pixel::RGB32, AVPixelFormat::AV_PIX_FMT_RGBA)
+            (Pixel::RGBA, AVPixelFormat::AV_PIX_FMT_RGBA)
          } else {
             (Pixel::RGB24, AVPixelFormat::AV_PIX_FMT_RGB24)
         };
@@ -320,7 +320,7 @@ pub fn convert_ndarray_to_frame_rgb(frame_array: &FrameArray) -> Result<Frame, E
     }
 }
 
-/// Converts an RGB24 / RGB32 video `AVFrame` produced by ffmpeg to an `ndarray`.
+/// Converts an RGB24 / RGBA video `AVFrame` produced by ffmpeg to an `ndarray`.
 ///
 /// # Arguments
 ///

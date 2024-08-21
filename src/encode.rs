@@ -176,7 +176,7 @@ impl Encoder {
     pub fn encode_raw(&mut self, frame: RawFrame) -> Result<()> {
         if frame.width() != self.scaler_width
             || frame.height() != self.scaler_height
-            || (frame.format() != AvPixel::RGB24 && frame.format() != AvPixel::RGB32)
+            || (frame.format() != AvPixel::RGB24 && frame.format() != AvPixel::RGBA)
         {
             return Err(Error::InvalidFrameFormat);
         }

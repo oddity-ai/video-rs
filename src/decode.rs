@@ -344,7 +344,7 @@ impl DecoderSplit {
             let descriptor = unsafe { *descriptor.as_ptr() };
 
             if descriptor.flags & ffmpeg::ffi::AV_PIX_FMT_FLAG_ALPHA as u64 > 0 {
-                scaler_output_format = AvPixel::RGB32;
+                scaler_output_format = AvPixel::RGBA;
             }
         };
 
