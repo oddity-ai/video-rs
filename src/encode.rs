@@ -119,6 +119,7 @@ pub struct Encoder {
     writer_stream_index: usize,
     encoder: AvEncoder,
     encoder_time_base: AvRational,
+    keyframe_interval: u64,
     interleaved: bool,
     scaler: AvScaler,
     scaler_width: u32,
@@ -129,8 +130,6 @@ pub struct Encoder {
 }
 
 impl Encoder {
-    const KEY_FRAME_INTERVAL: u64 = 12;
-
     /// Create an encoder with the specified destination and settings.
     ///
     /// * `destination` - Where to encode to.
@@ -190,7 +189,7 @@ impl Encoder {
         // Reformat frame to target pixel format.
         let mut frame = self.scale(frame)?;
         // Producer key frame every once in a while
-        if self.frame_count % Self::KEY_FRAME_INTERVAL == 0 {
+        if self.frame_count % self.keyframe_interval == 0 {
             frame.set_kind(AvFrameType::I);
         }
 
@@ -284,6 +283,7 @@ impl Encoder {
             writer_stream_index,
             encoder,
             encoder_time_base,
+            keyframe_interval: settings.keyframe_interval,
             interleaved,
             scaler,
             scaler_width,
@@ -385,10 +385,14 @@ pub struct Settings {
     width: u32,
     height: u32,
     pixel_format: AvPixel,
+    keyframe_interval: u64,
     options: Options,
 }
 
 impl Settings {
+    /// Default keyframe interval.
+    const KEY_FRAME_INTERVAL: u64 = 12;
+
     /// This is the assumed FPS for the encoder to use. Note that this does not need to be correct
     /// exactly.
     const FRAME_RATE: i32 = 30;
@@ -407,6 +411,7 @@ impl Settings {
             width: width as u32,
             height: height as u32,
             pixel_format: AvPixel::YUV420P,
+            keyframe_interval: Self::KEY_FRAME_INTERVAL,
             options,
         }
     }
@@ -435,8 +440,20 @@ impl Settings {
             width: width as u32,
             height: height as u32,
             pixel_format,
+            keyframe_interval: Self::KEY_FRAME_INTERVAL,
             options,
         }
+    }
+
+    /// Set the keyframe interval.
+    pub fn set_keyframe_interval(&mut self, keyframe_interval: u64) {
+        self.keyframe_interval = keyframe_interval;
+    }
+
+    /// Set the keyframe interval.
+    pub fn with_keyframe_interval(mut self, keyframe_interval: u64) -> Self {
+        self.set_keyframe_interval(keyframe_interval);
+        self
     }
 
     /// Apply the settings to an encoder.
