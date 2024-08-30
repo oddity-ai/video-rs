@@ -57,9 +57,7 @@ pub enum HardwareAccelerationDeviceType {
     /// OpenCL
     OpenCl,
     /// MediaCodec
-    MeiaCodec,
-    /// Vulkan
-    Vulkan,
+    MediaCodec,
     /// Direct3D 12 Video Acceleration
     D3D12Va,
 }
@@ -90,8 +88,7 @@ impl HardwareAccelerationDeviceType {
             ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_D3D11VA => Some(Self::D3D11Va),
             ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_DRM => Some(Self::Drm),
             ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_OPENCL => Some(Self::OpenCl),
-            ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_MEDIACODEC => Some(Self::MeiaCodec),
-            ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_VULKAN => Some(Self::Vulkan),
+            ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_MEDIACODEC => Some(Self::MediaCodec),
             ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_NONE => None,
             // FIXME: Find a way to handle the new variants in ffmpeg 7 without breaking backwards
             // compatibility...
@@ -131,11 +128,8 @@ impl From<HardwareAccelerationDeviceType> for ffmpeg::ffi::AVHWDeviceType {
             HardwareAccelerationDeviceType::OpenCl => {
                 ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_OPENCL
             }
-            HardwareAccelerationDeviceType::MeiaCodec => {
+            HardwareAccelerationDeviceType::MediaCodec => {
                 ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_MEDIACODEC
-            }
-            HardwareAccelerationDeviceType::Vulkan => {
-                ffmpeg::ffi::AVHWDeviceType::AV_HWDEVICE_TYPE_VULKAN
             }
             HardwareAccelerationDeviceType::D3D12Va => {
                 unimplemented!()
