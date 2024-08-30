@@ -145,6 +145,7 @@ pub fn output_raw_packetized_buf_start(
             // signature. Since it changed since ffmpeg 7 and we don't know during compile time
             // what verion we're dealing with, this trick will convert to the either the signature
             // where the buffer argument is `*const u8` or `*mut u8`.
+            #[allow(clippy::missing_transmute_annotations)]
             Some(std::mem::transmute::<*const (), _>(
                 output_raw_buf_start_callback as _,
             )),

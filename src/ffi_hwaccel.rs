@@ -117,7 +117,7 @@ unsafe extern "C" fn hwaccel_get_format(
 ) -> ffmpeg::ffi::AVPixelFormat {
     let mut p = pix_fmts;
     while *p != ffmpeg::ffi::AVPixelFormat::AV_PIX_FMT_NONE {
-        if *p == std::mem::transmute((*ctx).opaque as i32) {
+        if *p == std::mem::transmute::<i32, ffmpeg::ffi::AVPixelFormat>((*ctx).opaque as i32) {
             return *p;
         }
         p = p.add(1);

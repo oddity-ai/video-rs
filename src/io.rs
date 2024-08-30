@@ -160,9 +160,7 @@ impl Reader {
     /// Seek to start of reader. This function performs best effort seeking to the start of the
     /// file.
     pub fn seek_to_start(&mut self) -> Result<()> {
-        self.input
-            .seek(i64::min_value(), ..)
-            .map_err(Error::BackendError)
+        self.input.seek(i64::MIN, ..).map_err(Error::BackendError)
     }
 
     /// Find the best video stream and return the index.
