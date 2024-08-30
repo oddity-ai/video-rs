@@ -5,6 +5,7 @@ use ffmpeg::ffi::AV_TIME_BASE_Q;
 use ffmpeg::format::context::{Input as AvInput, Output as AvOutput};
 use ffmpeg::media::Type as AvMediaType;
 use ffmpeg::Error as AvError;
+use ffmpeg_next::ffi::av_seek_frame;
 
 use crate::error::Error;
 use crate::ffi;
@@ -155,6 +156,20 @@ impl Reader {
         self.input
             .seek(timestamp, range)
             .map_err(Error::BackendError)
+    }
+
+    /// Seek to a specific frame in the video stream.
+    ///
+    /// # Arguments
+    ///
+    /// * `frame_number` - The frame number to seek to.
+    pub fn seek_to_frame(&mut self, frame_number: i64) -> Result<()> {
+        unsafe {
+            match av_seek_frame(self.input.as_mut_ptr(), -1, frame_number, 0) {
+                0 => Ok(()),
+                e => Err(Error::BackendError(AvError::from(e))),
+            }
+        }
     }
 
     /// Seek to start of reader. This function performs best effort seeking to the start of the

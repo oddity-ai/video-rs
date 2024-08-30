@@ -224,7 +224,19 @@ impl Decoder {
     /// See [`Reader::seek`](crate::io::Reader::seek) for more information.
     #[inline]
     pub fn seek(&mut self, timestamp_milliseconds: i64) -> Result<()> {
-        self.reader.seek(timestamp_milliseconds)
+        self.reader
+            .seek(timestamp_milliseconds)
+            .inspect(|_| self.decoder.decoder.flush())
+    }
+
+    /// Seek to specific frame in reader.
+    ///
+    /// See [`Reader::seek_to_frame`](crate::io::Reader::seek_to_frame) for more information.
+    #[inline]
+    pub fn seek_to_frame(&mut self, frame_number: i64) -> Result<()> {
+        self.reader
+            .seek_to_frame(frame_number)
+            .inspect(|_| self.decoder.decoder.flush())
     }
 
     /// Seek to start of reader.
@@ -232,7 +244,9 @@ impl Decoder {
     /// See [`Reader::seek_to_start`](crate::io::Reader::seek_to_start) for more information.
     #[inline]
     pub fn seek_to_start(&mut self) -> Result<()> {
-        self.reader.seek_to_start()
+        self.reader
+            .seek_to_start()
+            .inspect(|_| self.decoder.decoder.flush())
     }
 
     /// Split the decoder into a decoder (of type [`DecoderSplit`]) and a [`Reader`].
