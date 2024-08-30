@@ -196,6 +196,9 @@ impl Encoder {
         self.encoder
             .send_frame(&frame)
             .map_err(Error::BackendError)?;
+        // Increment frame count regardless of whether or not frame is written, see
+        // https://github.com/oddity-ai/video-rs/issues/46.
+        self.frame_count += 1;
 
         if let Some(packet) = self.encoder_receive_packet()? {
             self.write(packet)?;
@@ -347,7 +350,6 @@ impl Encoder {
             self.writer.write(&mut packet)?;
         };
 
-        self.frame_count += 1;
         Ok(())
     }
 
