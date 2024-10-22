@@ -7,6 +7,7 @@ use ffmpeg::Error as FfmpegError;
 #[derive(Debug, Clone)]
 pub enum Error {
     ReadExhausted,
+    DecodeExhausted,
     WriteRetryLimitReached,
     InvalidFrameFormat,
     InvalidExtraData,
@@ -22,6 +23,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match *self {
             Error::ReadExhausted => None,
+            Error::DecodeExhausted => None,
             Error::WriteRetryLimitReached => None,
             Error::InvalidFrameFormat => None,
             Error::InvalidExtraData => None,
@@ -39,6 +41,7 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             Error::ReadExhausted => write!(f, "stream exhausted"),
+            Error::DecodeExhausted => write!(f, "stream exhausted"),
             Error::WriteRetryLimitReached => {
                 write!(f, "cannot write to video stream, even after multiple tries")
             }
