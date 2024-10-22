@@ -320,6 +320,9 @@ impl Decoder {
 }
 
 /// Decoder part of a split [`Decoder`] and [`Reader`].
+///
+/// Important note: Do not forget to drain the decoder after the reader is exhausted. It may still
+/// contain frames. Run `drain_raw()` or `drain()` in a loop until no more frames are produced.
 pub struct DecoderSplit {
     decoder: AvDecoder,
     decoder_time_base: AvRational,
