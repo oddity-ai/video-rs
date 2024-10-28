@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt update
-          apt install -y ca-certificates clang curl pkg-config
+          apt install -y build-essential ca-certificates clang curl pkg-config
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
@@ -96,7 +96,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    container: jrottenberg/ffmpeg:6-ubuntu
+    container: jrottenberg/ffmpeg:7-ubuntu
 
     steps:
       - name: Checkout
@@ -105,7 +105,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt update
-          apt install -y ca-certificates clang curl pkg-config
+          apt install -y build-essential ca-certificates clang curl pkg-config
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
@@ -117,7 +117,7 @@ jobs:
 
   lints:
     runs-on: ubuntu-latest
-    container: jrottenberg/ffmpeg:6-ubuntu
+    container: jrottenberg/ffmpeg:7-ubuntu
 
     steps:
       - name: Checkout
@@ -126,7 +126,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt update
-          apt install -y ca-certificates clang curl pkg-config
+          apt install -y build-essential ca-certificates clang curl pkg-config
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
