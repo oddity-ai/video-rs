@@ -126,7 +126,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt update
-          apt install -y --no-install-recommends ca-certificats clang curl pkg-config
+          apt install -y --no-install-recommends ca-certificates clang curl pkg-config
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
