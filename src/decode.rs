@@ -466,9 +466,6 @@ impl DecoderSplit {
     ///
     /// # Return value
     ///
-    ///
-    /// # Return value
-    ///
     /// A tuple of the [`Frame`] and timestamp (relative to the stream) and the frame itself if the
     /// decoder has a frame available, [`None`] if not.
     #[cfg(feature = "ndarray")]
