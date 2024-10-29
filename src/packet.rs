@@ -65,7 +65,7 @@ impl Packet {
     ///
     /// * `inner` - Inner `AvPacket`.
     /// * `time_base` - Source time base.
-    pub(crate) fn new(inner: AvPacket, time_base: AvRational) -> Self {
+    pub fn new(inner: AvPacket, time_base: AvRational) -> Self {
         Self { inner, time_base }
     }
 
