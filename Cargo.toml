@@ -11,7 +11,7 @@ repository = "https://github.com/oddity-ai/video-rs"
 readme = "README.md"
 
 [dependencies]
-ffmpeg-next = { version = "7.0", features = [
+ffmpeg-next = { version = "7.1", features = [
     "format",
     "codec",
     "software-resampling",
