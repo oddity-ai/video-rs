@@ -96,7 +96,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    container: jrottenberg/ffmpeg:7-ubuntu
+    container: jrottenberg/ffmpeg:7.1-ubuntu
 
     steps:
       - name: Checkout
@@ -117,7 +117,7 @@ jobs:
 
   lints:
     runs-on: ubuntu-latest
-    container: jrottenberg/ffmpeg:7-ubuntu
+    container: jrottenberg/ffmpeg:7.1-ubuntu
 
     steps:
       - name: Checkout
