@@ -33,7 +33,11 @@ impl StreamInfo {
         Self::from_params(stream.parameters(), stream.time_base(), stream_index)
     }
 
-    pub fn from_params(copar: AvCodecParameters, timebase: AvRational, stream_index: usize) -> Result<Self> {
+    pub fn from_params(
+        copar: AvCodecParameters,
+        timebase: AvRational,
+        stream_index: usize,
+    ) -> Result<Self> {
         Ok(Self {
             index: stream_index,
             codec_parameters: copar,
