@@ -27,8 +27,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          apt update
-          apt install -y build-essential ca-certificates clang curl pkg-config
+          DEBIAN_FRONTEND=noninteractive apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential ca-certificates clang curl pkg-config
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
@@ -104,8 +104,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          apt update
-          apt install -y build-essential ca-certificates clang curl pkg-config
+          DEBIAN_FRONTEND=noninteractive apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential ca-certificates clang curl pkg-config
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
@@ -125,8 +125,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          apt update
-          apt install -y build-essential ca-certificates clang curl pkg-config
+          DEBIAN_FRONTEND=noninteractive apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential ca-certificates clang curl pkg-config
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
