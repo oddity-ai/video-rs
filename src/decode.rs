@@ -546,6 +546,7 @@ impl DecoderSplit {
         let decode_result = self.decoder.receive_frame(&mut frame);
         match decode_result {
             Ok(()) => Ok(Some(frame)),
+            Err(AvError::Eof) => Err(Error::ReadExhausted),
             Err(AvError::Other { errno }) if errno == EAGAIN => Ok(None),
             Err(err) => Err(err.into()),
         }
