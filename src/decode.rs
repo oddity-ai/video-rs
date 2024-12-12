@@ -204,10 +204,16 @@ impl Decoder {
                 if let Some(frame) = self.decoder.decode(packet)? {
                     break frame;
                 }
-            } else if let Some(frame) = self.decoder.drain()? {
-                break frame;
             } else {
-                return Err(Error::DecodeExhausted);
+                match self.decoder.drain() {
+                    Ok(Some(frame)) => break frame,
+                    Ok(None) | Err(Error::ReadExhausted) => {
+                        self.decoder.reset();
+                        self.draining = false;
+                        return Err(Error::DecodeExhausted);
+                    }
+                    Err(err) => return Err(err),
+                }
             }
         })
     }
@@ -238,7 +244,15 @@ impl Decoder {
             } else if let Some(frame) = self.decoder.drain_raw()? {
                 break frame;
             } else {
-                return Err(Error::DecodeExhausted);
+                match self.decoder.drain_raw() {
+                    Ok(Some(frame)) => break frame,
+                    Ok(None) | Err(Error::ReadExhausted) => {
+                        self.decoder.reset();
+                        self.draining = false;
+                        return Err(Error::DecodeExhausted);
+                    }
+                    Err(err) => return Err(err),
+                }
             }
         })
     }
@@ -490,6 +504,12 @@ impl DecoderSplit {
             self.draining = true;
         }
         self.receive_frame_from_decoder()
+    }
+
+    /// Reset the decoder to be used again after draining.
+    pub fn reset(&mut self) {
+        self.decoder.flush();
+        self.draining = false;
     }
 
     /// Get the decoders input size (resolution dimensions): width and height.
