@@ -1,4 +1,4 @@
 [toolchain]
-channel = "nightly"            # TODO: Temp
+channel = "stable"
 profile = "default"
 components = ["rust-analyzer"]
