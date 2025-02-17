@@ -95,11 +95,19 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential ca-certificates clang curl pkg-config
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+#     - name: Setup Rust
+#       uses: dtolnay/rust-toolchain@stable
     
+      # TODO: Temporarily use nightly version of Rust for tests. Stable
+      # currently has a bug that causes linking to fail. The fix is in
+      # https://github.com/rust-lang/rust/commit/9ed0d11efbec18a1fa4155576a3bcb685676d23c
+      # and will hit stable at some point.
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@nightly
+ 
       - name: Test
-        run: cargo test --all-features
+        run: cargo +nightly test --all-features # TODO: Temporarily use nightly for tests.
 
   lints:
     runs-on: ubuntu-latest
