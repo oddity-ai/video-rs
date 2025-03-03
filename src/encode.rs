@@ -229,7 +229,7 @@ impl Encoder {
         self.encoder_time_base
     }
 
-    /// Create an encoder from a `FileWriter` instance.
+    /// Create an encoder from a [`Writer`].
     ///
     /// # Arguments
     ///
