@@ -28,8 +28,9 @@ type Result<T> = std::result::Result<T, Error>;
 /// );
 ///
 /// let mut reader = ReaderBuilder::new(Path::new("my_file.mp4"))
-/// .with_options(&options.into())
-/// .unwrap();
+///     .with_options(&options.into())
+///     .build()
+///     .unwrap();
 /// ```
 pub struct ReaderBuilder<'a> {
     source: Location,
@@ -280,8 +281,9 @@ impl<'a> WriterBuilder<'a> {
 /// );
 ///
 /// let mut writer = WriterBuilder::new(Path::new("my_file.mp4"))
-/// .with_options(&options.into())
-/// .unwrap();
+///     .with_options(&options.into())
+///     .build()
+///     .unwrap();
 /// ```
 pub struct Writer {
     pub destination: Location,
