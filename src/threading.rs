@@ -10,11 +10,13 @@ impl From<ThreadingConfig> for ffmpeg_next::threading::Config {
             ThreadingConfig::Auto { kind } => ffmpeg_next::threading::Config {
                 count: 0,
                 kind: kind.into(),
+                #[cfg(not(target_os = "macos"))]
                 safe: true,
             },
             ThreadingConfig::Manual { count, kind } => ffmpeg_next::threading::Config {
                 count,
                 kind: kind.into(),
+                #[cfg(not(target_os = "macos"))]
                 safe: true,
             },
         }
