@@ -19,6 +19,7 @@ use crate::location::Location;
 use crate::options::Options;
 use crate::packet::Packet;
 use crate::resize::Resize;
+use crate::threading::ThreadingConfig;
 use crate::time::Time;
 
 type Result<T> = std::result::Result<T, Error>;
@@ -32,6 +33,7 @@ pub struct DecoderBuilder<'a> {
     options: Option<&'a Options>,
     resize: Option<Resize>,
     hardware_acceleration_device_type: Option<HardwareAccelerationDeviceType>,
+    threading_config: Option<ThreadingConfig>
 }
 
 impl<'a> DecoderBuilder<'a> {
@@ -44,6 +46,7 @@ impl<'a> DecoderBuilder<'a> {
             options: None,
             resize: None,
             hardware_acceleration_device_type: None,
+            threading_config: None,
         }
     }
 
@@ -74,6 +77,14 @@ impl<'a> DecoderBuilder<'a> {
         self
     }
 
+    /// Set threading configuration.
+    ///
+    /// * `threading_config` - Threading configuration.
+    pub fn with_threading_config(mut self, threading_config: ThreadingConfig) -> Self {
+        self.threading_config = Some(threading_config);
+        self
+    }
+
     /// Build [`Decoder`].
     pub fn build(self) -> Result<Decoder> {
         let mut reader_builder = ReaderBuilder::new(self.source);
@@ -88,6 +99,7 @@ impl<'a> DecoderBuilder<'a> {
                 reader_stream_index,
                 self.resize,
                 self.hardware_acceleration_device_type,
+                self.threading_config,
             )?,
             reader,
             reader_stream_index,
@@ -359,6 +371,7 @@ impl DecoderSplit {
         reader_stream_index: usize,
         resize: Option<Resize>,
         hwaccel_device_type: Option<HardwareAccelerationDeviceType>,
+        threading_config: Option<ThreadingConfig>,
     ) -> Result<Self> {
         let reader_stream = reader
             .input
@@ -368,6 +381,10 @@ impl DecoderSplit {
         let mut decoder = AvContext::new();
         ffi::set_decoder_context_time_base(&mut decoder, reader_stream.time_base());
         decoder.set_parameters(reader_stream.parameters())?;
+        
+        if let Some(config) = threading_config {
+            decoder.set_threading(config.into());
+        }
 
         let hwaccel_context = match hwaccel_device_type {
             Some(device_type) => Some(HardwareAccelerationContext::new(&mut decoder, device_type)?),

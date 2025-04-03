@@ -13,6 +13,7 @@ pub mod packet;
 pub mod resize;
 pub mod rtp;
 pub mod stream;
+pub mod threading;
 pub mod time;
 
 mod ffi;
@@ -30,6 +31,7 @@ pub use mux::{Muxer, MuxerBuilder};
 pub use options::Options;
 pub use packet::Packet;
 pub use resize::Resize;
+pub use threading::{ThreadingConfig, ThreadingKind};
 pub use time::Time;
 
 /// Re-export backend `ffmpeg` library.
