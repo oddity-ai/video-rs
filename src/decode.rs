@@ -2,7 +2,7 @@ extern crate ffmpeg_next as ffmpeg;
 
 use ffmpeg::codec::decoder::Video as AvDecoder;
 use ffmpeg::codec::Context as AvContext;
-use ffmpeg::format::pixel::Pixel as AvPixel;
+pub use ffmpeg::format::pixel::Pixel as AvPixel;
 use ffmpeg::software::scaling::{context::Context as AvScaler, flag::Flags as AvScalerFlags};
 use ffmpeg::util::error::EAGAIN;
 use ffmpeg::{Error as AvError, Rational as AvRational};
@@ -12,7 +12,7 @@ use crate::ffi;
 use crate::ffi_hwaccel;
 #[cfg(feature = "ndarray")]
 use crate::frame::Frame;
-use crate::frame::{RawFrame, FRAME_PIXEL_FORMAT};
+use crate::frame::RawFrame;
 use crate::hwaccel::{HardwareAccelerationContext, HardwareAccelerationDeviceType};
 use crate::io::{Reader, ReaderBuilder};
 use crate::location::Location;
@@ -31,6 +31,7 @@ pub struct DecoderBuilder<'a> {
     source: Location,
     options: Option<&'a Options>,
     resize: Option<Resize>,
+    format: Option<AvPixel>,
     hardware_acceleration_device_type: Option<HardwareAccelerationDeviceType>,
 }
 
@@ -43,6 +44,7 @@ impl<'a> DecoderBuilder<'a> {
             source: source.into(),
             options: None,
             resize: None,
+            format: None,
             hardware_acceleration_device_type: None,
         }
     }
@@ -60,6 +62,14 @@ impl<'a> DecoderBuilder<'a> {
     /// * `resize` - Resizing to apply.
     pub fn with_resize(mut self, resize: Resize) -> Self {
         self.resize = Some(resize);
+        self
+    }
+
+    /// Set pixel format to apply to frames.
+    ///
+    /// * `format` - Pixel format to apply.
+    pub fn with_format(mut self, format: AvPixel) -> Self {
+        self.format = Some(format);
         self
     }
 
@@ -87,6 +97,7 @@ impl<'a> DecoderBuilder<'a> {
                 &reader,
                 reader_stream_index,
                 self.resize,
+                self.format,
                 self.hardware_acceleration_device_type,
             )?,
             reader,
@@ -124,6 +135,15 @@ impl Decoder {
     #[inline]
     pub fn new(source: impl Into<Location>) -> Result<Self> {
         DecoderBuilder::new(source).build()
+    }
+
+    /// Reconfigures frame scaling parameters during decoding.
+    ///
+    /// This will affect all subsequent frames by resizing them to the specified
+    /// dimensions and converting to the given pixel format.
+    pub fn reconfigure_scaling(&mut self, width: u32, height: u32, pixel_format: AvPixel) {
+        self.decoder
+            .reconfigure_scaling(width, height, pixel_format);
     }
 
     /// Get decoder time base.
@@ -303,14 +323,14 @@ impl Decoder {
     /// Get the decoders input size (resolution dimensions): width and height.
     #[inline(always)]
     pub fn size(&self) -> (u32, u32) {
-        self.decoder.size
+        self.decoder.size()
     }
 
     /// Get the decoders output size after resizing is applied (resolution dimensions): width and
     /// height.
     #[inline(always)]
     pub fn size_out(&self) -> (u32, u32) {
-        self.decoder.size_out
+        self.decoder.size_out()
     }
 
     /// Get the decoders input frame rate as floating-point value.
@@ -342,8 +362,6 @@ pub struct DecoderSplit {
     decoder_time_base: AvRational,
     hwaccel_context: Option<HardwareAccelerationContext>,
     scaler: Option<AvScaler>,
-    size: (u32, u32),
-    size_out: (u32, u32),
     draining: bool,
 }
 
@@ -358,6 +376,7 @@ impl DecoderSplit {
         reader: &Reader,
         reader_stream_index: usize,
         resize: Option<Resize>,
+        format: Option<AvPixel>,
         hwaccel_device_type: Option<HardwareAccelerationDeviceType>,
     ) -> Result<Self> {
         let reader_stream = reader
@@ -388,44 +407,36 @@ impl DecoderSplit {
             None => (decoder.width(), decoder.height()),
         };
 
-        let scaler_input_format = if hwaccel_context.is_some() {
-            HWACCEL_PIXEL_FORMAT
-        } else {
-            decoder.format()
-        };
-
-        let is_scaler_needed = !(scaler_input_format == FRAME_PIXEL_FORMAT
-            && decoder.width() == resize_width
-            && decoder.height() == resize_height);
-        let scaler = if is_scaler_needed {
-            Some(
-                AvScaler::get(
-                    scaler_input_format,
-                    decoder.width(),
-                    decoder.height(),
-                    FRAME_PIXEL_FORMAT,
-                    resize_width,
-                    resize_height,
-                    AvScalerFlags::AREA,
-                )
-                .map_err(Error::BackendError)?,
-            )
-        } else {
-            None
-        };
-
-        let size = (decoder.width(), decoder.height());
-        let size_out = (resize_width, resize_height);
-
-        Ok(Self {
+        let mut decoder = Self {
             decoder,
             decoder_time_base,
             hwaccel_context,
-            scaler,
-            size,
-            size_out,
+            scaler: None,
             draining: false,
-        })
+        };
+        let format = format.unwrap_or_else(|| decoder.input_format());
+        decoder.reconfigure_scaling(resize_width, resize_height, format);
+
+        Ok(decoder)
+    }
+
+    pub fn reconfigure_scaling(&mut self, width: u32, height: u32, pixel_format: AvPixel) {
+        if self.is_scaler_needed(width, height, pixel_format) {
+            let (input_width, input_height) = self.size();
+
+            self.scaler = Some(
+                AvScaler::get(
+                    self.input_format(),
+                    input_width,
+                    input_height,
+                    pixel_format,
+                    width,
+                    height,
+                    AvScalerFlags::AREA,
+                )
+                .unwrap(),
+            );
+        }
     }
 
     /// Get decoder time base.
@@ -515,14 +526,37 @@ impl DecoderSplit {
     /// Get the decoders input size (resolution dimensions): width and height.
     #[inline(always)]
     pub fn size(&self) -> (u32, u32) {
-        self.size
+        (self.decoder.width(), self.decoder.height())
+    }
+
+    /// Get the decoders input format.
+    pub fn input_format(&self) -> AvPixel {
+        if self.hwaccel_context.is_some() {
+            HWACCEL_PIXEL_FORMAT
+        } else {
+            self.decoder.format()
+        }
     }
 
     /// Get the decoders output size after resizing is applied (resolution dimensions): width and
     /// height.
     #[inline(always)]
     pub fn size_out(&self) -> (u32, u32) {
-        self.size_out
+        if let Some(scaler) = self.scaler.as_ref() {
+            let output = scaler.output();
+            (output.width, output.height)
+        } else {
+            self.size()
+        }
+    }
+
+    /// Get the decoders output format after rescaling is applied.
+    pub fn output_format(&self) -> AvPixel {
+        if let Some(scaler) = self.scaler.as_ref() {
+            scaler.output().format
+        } else {
+            self.input_format()
+        }
     }
 
     /// Send packet to decoder. Includes rescaling timestamps accordingly.
@@ -599,6 +633,15 @@ impl DecoderSplit {
         let frame = ffi::convert_frame_to_ndarray_rgb24(frame).map_err(Error::BackendError)?;
 
         Ok((timestamp, frame))
+    }
+
+    fn is_scaler_needed(
+        &self,
+        output_width: u32,
+        output_height: u32,
+        output_format: AvPixel,
+    ) -> bool {
+        self.output_format() != output_format || self.size_out() != (output_width, output_height)
     }
 }
 
