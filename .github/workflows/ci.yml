@@ -2,15 +2,14 @@ name: ci
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-
   build-linux:
     name: build / linux / ffmpeg ${{ matrix.ffmpeg_version }}
     runs-on: ubuntu-latest
@@ -32,7 +31,7 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-    
+
       - name: Build
         run: cargo build
 
@@ -50,7 +49,7 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-    
+
       - name: Build
         run: cargo build
 
@@ -59,7 +58,7 @@ jobs:
     runs-on: windows-latest
 
     env:
-      FFMPEG_DOWNLOAD_URL: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z
+      FFMPEG_DOWNLOAD_URL: https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-7.1.1-full_build-shared.7z
 
     steps:
       - name: Checkout
@@ -69,8 +68,8 @@ jobs:
         run: |
           $VCINSTALLDIR = $(& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath)
           Add-Content $env:GITHUB_ENV "LIBCLANG_PATH=${VCINSTALLDIR}\VC\Tools\LLVM\x64\bin`n"
-          Invoke-WebRequest "${env:FFMPEG_DOWNLOAD_URL}" -OutFile ffmpeg-release-full-shared.7z
-          7z x ffmpeg-release-full-shared.7z
+          Invoke-WebRequest "${env:FFMPEG_DOWNLOAD_URL}" -OutFile ffmpeg-7.1.1-full_build-shared.7z
+          7z x ffmpeg-7.1.1-full_build-shared.7z
           mkdir ffmpeg
           mv ffmpeg-*/* ffmpeg/
           Add-Content $env:GITHUB_ENV "FFMPEG_DIR=${pwd}\ffmpeg`n"
@@ -78,7 +77,7 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-    
+
       - name: Build
         run: cargo build
 
@@ -95,9 +94,9 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential ca-certificates clang curl pkg-config
 
-#     - name: Setup Rust
-#       uses: dtolnay/rust-toolchain@stable
-    
+      #     - name: Setup Rust
+      #       uses: dtolnay/rust-toolchain@stable
+
       # TODO: Temporarily use nightly version of Rust for tests. Stable
       # currently has a bug that causes linking to fail. The fix is in
       # https://github.com/rust-lang/rust/commit/9ed0d11efbec18a1fa4155576a3bcb685676d23c
@@ -105,7 +104,7 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@nightly
- 
+
       - name: Test
         run: cargo +nightly test --all-features # TODO: Temporarily use nightly for tests.
 
@@ -126,7 +125,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-    
+
       - name: Rustfmt
         run: cargo fmt --all -- --check
 
