@@ -54,7 +54,7 @@ jobs:
         run: cargo build
 
   build-windows:
-    name: build / windows / latest ffmpeg
+    name: build / windows / ffmpeg 7.1
     runs-on: windows-latest
 
     env:
