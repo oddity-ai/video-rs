@@ -70,12 +70,12 @@ impl Packet {
     }
 
     /// Downcast to native inner type.
-    pub(crate) fn into_inner(self) -> AvPacket {
+    pub fn into_inner(self) -> AvPacket {
         self.inner
     }
 
     /// Downcast to native inner type and time base.
-    pub(crate) fn into_inner_parts(self) -> (AvPacket, AvRational) {
+    pub fn into_inner_parts(self) -> (AvPacket, AvRational) {
         (self.inner, self.time_base)
     }
 }
