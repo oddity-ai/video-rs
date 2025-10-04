@@ -243,10 +243,11 @@ impl Encoder {
             .flags()
             .contains(AvFormatFlags::GLOBAL_HEADER);
 
-        let mut writer_stream = writer.output.add_stream(settings.codec())?;
+
+        let mut writer_stream = writer.output.add_stream(settings.encoder)?;
         let writer_stream_index = writer_stream.index();
 
-        let mut encoder_context = match settings.codec() {
+        let mut encoder_context = match settings.encoder {
             Some(codec) => ffi::codec_context_as(&codec)?,
             None => AvContext::new(),
         };
@@ -389,6 +390,7 @@ pub struct Settings {
     pixel_format: AvPixel,
     keyframe_interval: u64,
     options: Options,
+    encoder: Option<AvCodec>
 }
 
 impl Settings {
@@ -415,6 +417,7 @@ impl Settings {
             pixel_format: AvPixel::YUV420P,
             keyframe_interval: Self::KEY_FRAME_INTERVAL,
             options,
+            encoder: Self::codec(&self)
         }
     }
 
@@ -444,6 +447,7 @@ impl Settings {
             pixel_format,
             keyframe_interval: Self::KEY_FRAME_INTERVAL,
             options,
+            encoder: Self::codec(&self)
         }
     }
 
@@ -480,6 +484,13 @@ impl Settings {
         // h264 decoder we have.
         Some(
             ffmpeg::encoder::find_by_name("libx264")
+                .unwrap_or(ffmpeg::encoder::find(AvCodecId::H264)?),
+        )
+    }
+
+    pub fn resolve_encoder(&self, encoder_name: &str) -> Option<AvCodec> {
+        self.encoder = Some(
+            ffmpeg::encoder::find_by_name(encoder_name)
                 .unwrap_or(ffmpeg::encoder::find(AvCodecId::H264)?),
         )
     }
