@@ -488,12 +488,15 @@ impl Settings {
         )
     }
 
-    pub fn resolve_encoder(&self, encoder_name: &str) -> Option<AvCodec> {
-        self.encoder = Some(
-            ffmpeg::encoder::find_by_name(encoder_name)
-                .unwrap_or(ffmpeg::encoder::find(AvCodecId::H264)?),
-        )
+    pub fn with_encoder(mut self, encoder_name: &str) -> Result<Self, Error> {
+        let encoder = ffmpeg::encoder::find_by_name(encoder_name)
+            .or_else(|| ffmpeg::encoder::find(AvCodecId::H264))
+            .ok_or_else(|| Error::EncoderNotFound(encoder_name.to_string()))?;
+
+        self.encoder = Some(encoder);
+        Ok(self)
     }
+
 
     /// Get encoder options.
     fn options(&self) -> &Options {
