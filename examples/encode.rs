@@ -2,7 +2,6 @@ use std::path::{Path, PathBuf};
 
 use ndarray::Array3;
 
-use tracing::Instrument;
 use video_rs::encode::{Encoder, Settings};
 use video_rs::time::Time;
 
