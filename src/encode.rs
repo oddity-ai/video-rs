@@ -243,10 +243,10 @@ impl Encoder {
             .flags()
             .contains(AvFormatFlags::GLOBAL_HEADER);
 
-        let mut writer_stream = writer.output.add_stream(settings.codec())?;
+        let mut writer_stream = writer.output.add_stream(settings.codec)?;
         let writer_stream_index = writer_stream.index();
 
-        let mut encoder_context = match settings.codec() {
+        let mut encoder_context = match settings.codec {
             Some(codec) => ffi::codec_context_as(&codec)?,
             None => AvContext::new(),
         };
@@ -382,13 +382,32 @@ impl Drop for Encoder {
 }
 
 /// Holds a logical combination of encoder settings.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Settings {
     width: u32,
     height: u32,
     pixel_format: AvPixel,
+    codec: Option<AvCodec>,
     keyframe_interval: u64,
     options: Options,
+}
+
+impl std::fmt::Debug for Settings {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let codec_name = if let Some(codec) = &self.codec {
+            codec.name()
+        } else {
+            "None"
+        };
+        f.debug_struct("Settings")
+            .field("width", &self.width)
+            .field("height", &self.height)
+            .field("pixel_format", &self.pixel_format)
+            .field("codec", &codec_name)
+            .field("keyframe_interval", &self.keyframe_interval)
+            .field("options", &self.options)
+            .finish()
+    }
 }
 
 impl Settings {
@@ -399,9 +418,19 @@ impl Settings {
     /// exactly.
     const FRAME_RATE: i32 = 30;
 
+    pub fn find_codec(codec_id: AvCodecId, default_name: Option<&str>) -> Option<AvCodec> {
+        if let Some(default_name) = default_name {
+            if let Some(codec) = ffmpeg::encoder::find_by_name(default_name) {
+                return Some(codec);
+            }
+        }
+        ffmpeg::encoder::find(codec_id)
+    }
+
     /// Create encoder settings for an H264 stream with YUV420p pixel format. This will encode to
     /// arguably the most widely compatible video file since H264 is a common codec and YUV420p is
     /// the most commonly used pixel format.
+    #[cfg(feature = "h264")]
     pub fn preset_h264_yuv420p(width: usize, height: usize, realtime: bool) -> Settings {
         let options = if realtime {
             Options::preset_h264_realtime()
@@ -414,6 +443,7 @@ impl Settings {
             height: height as u32,
             pixel_format: AvPixel::YUV420P,
             keyframe_interval: Self::KEY_FRAME_INTERVAL,
+            codec: Self::find_codec(AvCodecId::H264, Some("libx264")),
             options,
         }
     }
@@ -432,6 +462,7 @@ impl Settings {
     /// # Return value
     ///
     /// A `Settings` instance with the specified configuration.+
+    #[cfg(feature = "h264")]
     pub fn preset_h264_custom(
         width: usize,
         height: usize,
@@ -443,7 +474,44 @@ impl Settings {
             height: height as u32,
             pixel_format,
             keyframe_interval: Self::KEY_FRAME_INTERVAL,
+            codec: Self::find_codec(AvCodecId::H264, Some("libx264")),
             options,
+        }
+    }
+
+    /// Create encoder settings for a VP9 stream with YUV420p pixel format. This will encode to
+    /// a widely supported video file that is not patent / licensing encumbered and YUV420p is
+    /// the most commonly used pixel format.
+    #[cfg(feature = "vp9")]
+    pub fn preset_vp9_yuv420p(width: usize, height: usize, options: Option<Options>) -> Settings {
+        Self {
+            width: width as u32,
+            height: height as u32,
+            pixel_format: AvPixel::YUV420P,
+            keyframe_interval: Self::KEY_FRAME_INTERVAL,
+            codec: Self::find_codec(AvCodecId::VP9, Some("libvpx")),
+            options: options.unwrap_or_default(),
+        }
+    }
+
+    /// Create encoder settings for a VP9 stream with YUV420p pixel format. This will encode to
+    /// a widely supported video file that is not patent / licensing encumbered and YUV420p is
+    /// the most commonly used pixel format.
+    #[cfg(feature = "vp9")]
+    pub fn preset_vp9_yuv420p_realtime(
+        width: usize,
+        height: usize,
+        options: Option<Options>,
+    ) -> Settings {
+        let mut opts = options.unwrap_or_default();
+        opts.set("deadline", "realtime");
+        Self {
+            width: width as u32,
+            height: height as u32,
+            pixel_format: AvPixel::YUV420P,
+            keyframe_interval: Self::KEY_FRAME_INTERVAL,
+            codec: Self::find_codec(AvCodecId::VP9, Some("libvpx")),
+            options: opts,
         }
     }
 
@@ -472,16 +540,6 @@ impl Settings {
         encoder.set_height(self.height);
         encoder.set_format(self.pixel_format);
         encoder.set_frame_rate(Some((Self::FRAME_RATE, 1)));
-    }
-
-    /// Get codec.
-    fn codec(&self) -> Option<AvCodec> {
-        // Try to use the libx264 decoder. If it is not available, then use use whatever default
-        // h264 decoder we have.
-        Some(
-            ffmpeg::encoder::find_by_name("libx264")
-                .unwrap_or(ffmpeg::encoder::find(AvCodecId::H264)?),
-        )
     }
 
     /// Get encoder options.

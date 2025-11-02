@@ -16,7 +16,6 @@ impl Options {
     pub fn preset_rtsp_transport_tcp() -> Self {
         let mut opts = AvDictionary::new();
         opts.set("rtsp_transport", "tcp");
-
         Self(opts)
     }
 
@@ -54,6 +53,7 @@ impl Options {
     }
 
     /// Default options for a H264 encoder.
+    #[cfg(feature = "h264")]
     pub fn preset_h264() -> Self {
         let mut opts = AvDictionary::new();
         // Set H264 encoder to the medium preset.
@@ -64,6 +64,7 @@ impl Options {
 
     /// Options for a H264 encoder that are tuned for low-latency encoding such as for real-time
     /// streaming.
+    #[cfg(feature = "h264")]
     pub fn preset_h264_realtime() -> Self {
         let mut opts = AvDictionary::new();
         // Set H264 encoder to the medium preset.
@@ -72,6 +73,11 @@ impl Options {
         opts.set("tune", "zerolatency");
 
         Self(opts)
+    }
+
+    pub fn set(&mut self, key: &str, value: &str) {
+        let Self(dict) = self;
+        dict.set(key, value);
     }
 
     /// Convert back to ffmpeg native dictionary, which can be used with `ffmpeg_next` functions.
