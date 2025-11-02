@@ -140,6 +140,8 @@ fn hsv_to_rgb(h: f32, s: f32, v: f32) -> [u8; 3] {
 }
 ```
 
+See [examples/encode.rs](examples/encode.rs) for more examples on how to encode. See instructions via `cargo run --example encode -- --help`.
+
 ## 🪲 Debugging
 
 Ffmpeg does not always produce useful error messages directly. It is
