@@ -83,7 +83,7 @@ impl Args {
 
 fn main() {
     let args = Args::parse();
-
+    tracing_subscriber::fmt::init();
     video_rs::init().unwrap();
 
     let settings = args.settings();

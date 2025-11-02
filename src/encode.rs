@@ -1,5 +1,7 @@
 extern crate ffmpeg_next as ffmpeg;
 
+use std::ffi::c_int;
+
 use ffmpeg::codec::codec::Codec as AvCodec;
 use ffmpeg::codec::encoder::video::Encoder as AvEncoder;
 use ffmpeg::codec::encoder::video::Video as AvVideo;
@@ -250,6 +252,14 @@ impl Encoder {
             Some(codec) => ffi::codec_context_as(&codec)?,
             None => AvContext::new(),
         };
+        let slice: c_int = ffmpeg_next::threading::Type::Slice.into();
+        let frame: c_int = ffmpeg_next::threading::Type::Frame.into();
+        let threading_kind = slice & frame;
+        let config = ffmpeg_next::threading::Config {
+            kind: threading_kind.into(),
+            count: 0,
+        };
+        encoder_context.set_threading(config);
 
         // Some formats require this flag to be set or the output will
         // not be playable by dumb players.
@@ -505,6 +515,8 @@ impl Settings {
     ) -> Settings {
         let mut opts = options.unwrap_or_default();
         opts.set("deadline", "realtime");
+        opts.set("row-mt", "1");
+        opts.set("cpu-used", "8");
         Self {
             width: width as u32,
             height: height as u32,
