@@ -498,7 +498,7 @@ impl Settings {
             width,
             height,
             AvPixel::YUV420P,
-            Self::find_codec(AvCodecId::VP9, Some("libvpx")),
+            Self::find_codec(AvCodecId::VP9, Some("libvpx-vp9")),
             options.unwrap_or_default(),
         )
     }
@@ -520,7 +520,7 @@ impl Settings {
             width,
             height,
             AvPixel::YUV420P,
-            Self::find_codec(AvCodecId::VP9, Some("libvpx")),
+            Self::find_codec(AvCodecId::VP9, Some("libvpx-vp9")),
             opts,
         )
     }
