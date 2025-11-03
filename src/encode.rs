@@ -8,16 +8,18 @@ use ffmpeg::codec::encoder::video::Video as AvVideo;
 use ffmpeg::codec::flag::Flags as AvCodecFlags;
 use ffmpeg::codec::packet::Packet as AvPacket;
 use ffmpeg::codec::Context as AvContext;
-pub use ffmpeg::codec::Id as AvCodecId;
 use ffmpeg::format::flag::Flags as AvFormatFlags;
 use ffmpeg::software::scaling::context::Context as AvScaler;
 use ffmpeg::software::scaling::flag::Flags as AvScalerFlags;
 use ffmpeg::util::error::EAGAIN;
-use ffmpeg::util::format::Pixel as AvPixel;
 use ffmpeg::util::mathematics::rescale::TIME_BASE;
 use ffmpeg::util::picture::Type as AvFrameType;
 use ffmpeg::Error as AvError;
 use ffmpeg::Rational as AvRational;
+
+// We re-export these two types to allow callers to select pixel formats and codecs
+pub use ffmpeg::codec::Id as AvCodecId;
+pub use ffmpeg::util::format::Pixel as AvPixel;
 
 use crate::error::Error;
 use crate::ffi;
