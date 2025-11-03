@@ -447,15 +447,13 @@ impl Settings {
         } else {
             Options::preset_h264()
         };
-
-        Self {
-            width: width as u32,
-            height: height as u32,
-            pixel_format: AvPixel::YUV420P,
-            keyframe_interval: Self::KEY_FRAME_INTERVAL,
-            codec: Self::find_codec(AvCodecId::H264, Some("libx264")),
+        Self::new(
+            width,
+            height,
+            AvPixel::YUV420P,
+            Self::find_codec(AvCodecId::H264, Some("libx264")),
             options,
-        }
+        )
     }
 
     /// Create encoder settings for an H264 stream with a custom pixel format and options.
@@ -479,14 +477,13 @@ impl Settings {
         pixel_format: PixelFormat,
         options: Options,
     ) -> Settings {
-        Self {
-            width: width as u32,
-            height: height as u32,
+        Self::new(
+            width,
+            height,
             pixel_format,
-            keyframe_interval: Self::KEY_FRAME_INTERVAL,
-            codec: Self::find_codec(AvCodecId::H264, Some("libx264")),
+            Self::find_codec(AvCodecId::H264, Some("libx264")),
             options,
-        }
+        )
     }
 
     /// Create encoder settings for a VP9 stream with YUV420p pixel format. This will encode to
@@ -494,14 +491,13 @@ impl Settings {
     /// the most commonly used pixel format.
     #[cfg(feature = "vp9")]
     pub fn preset_vp9_yuv420p(width: usize, height: usize, options: Option<Options>) -> Settings {
-        Self {
-            width: width as u32,
-            height: height as u32,
-            pixel_format: AvPixel::YUV420P,
-            keyframe_interval: Self::KEY_FRAME_INTERVAL,
-            codec: Self::find_codec(AvCodecId::VP9, Some("libvpx")),
-            options: options.unwrap_or_default(),
-        }
+        Self::new(
+            width,
+            height,
+            AvPixel::YUV420P,
+            Self::find_codec(AvCodecId::VP9, Some("libvpx")),
+            options.unwrap_or_default(),
+        )
     }
 
     /// Create encoder settings for a VP9 stream with YUV420p pixel format. This will encode to
@@ -517,13 +513,29 @@ impl Settings {
         opts.set("deadline", "realtime");
         opts.set("row-mt", "1");
         opts.set("cpu-used", "8");
+        Self::new(
+            width,
+            height,
+            AvPixel::YUV420P,
+            Self::find_codec(AvCodecId::VP9, Some("libvpx")),
+            opts,
+        )
+    }
+
+    pub fn new(
+        width: usize,
+        height: usize,
+        pixel_format: AvPixel,
+        codec: Option<AvCodec>,
+        options: Options,
+    ) -> Settings {
         Self {
             width: width as u32,
             height: height as u32,
-            pixel_format: AvPixel::YUV420P,
+            pixel_format,
             keyframe_interval: Self::KEY_FRAME_INTERVAL,
-            codec: Self::find_codec(AvCodecId::VP9, Some("libvpx")),
-            options: opts,
+            codec,
+            options,
         }
     }
 
