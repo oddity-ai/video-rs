@@ -21,5 +21,19 @@ ndarray = { version = "0.16", optional = true }
 tracing = "0.1"
 url = "2"
 
+[dev-dependencies]
+clap = { version = "4.5", features = ["derive"] }
+tracing-subscriber = "0.3"
+
+[[example]]
+name = "encode"
+required-features = ["h264", "vp9", "ndarray"]
+
+[features]
+default = ["h264", "vp9", "ndarray"]
+h264 = []
+vp9 = []
+ndarray = ["dep:ndarray"]
+
 [package.metadata.docs.rs]
 all-features = true
