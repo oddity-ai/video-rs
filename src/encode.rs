@@ -189,7 +189,7 @@ impl Encoder {
         // Reformat frame to target pixel format.
         let mut frame = self.scale(frame)?;
         // Producer key frame every once in a while
-        if self.frame_count % self.keyframe_interval == 0 {
+        if self.frame_count.is_multiple_of(self.keyframe_interval) {
             frame.set_kind(AvFrameType::I);
         }
 

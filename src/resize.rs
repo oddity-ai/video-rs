@@ -91,7 +91,7 @@ fn calculate_fit_dims_even(dims: (u32, u32), fit_dims: (u32, u32)) -> Option<(u3
         let out_w = (w as f32 * f).round() as u32;
         let out_h = (h as f32 * f).round() as u32;
         if (out_w > 0) && (out_h > 0) {
-            if (out_w % 2 == 0) && (out_h % 2 == 0) {
+            if out_w.is_multiple_of(2) && out_h.is_multiple_of(2) {
                 return Some((out_w, out_h));
             } else if wf < hf {
                 w_max -= 1;
