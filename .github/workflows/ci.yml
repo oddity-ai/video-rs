@@ -17,7 +17,8 @@ jobs:
 
     strategy:
       matrix:
-        ffmpeg_version: ["4.3", "4.4", "5.0", "5.1", "6.0", "6.1", "7.0", "7.1"]
+        ffmpeg_version:
+          ["4.3", "4.4", "5.0", "5.1", "6.0", "6.1", "7.0", "7.1", "8.0"]
       fail-fast: false
 
     steps:
@@ -36,7 +37,7 @@ jobs:
         run: cargo build
 
   build-macos:
-    name: build / macos / ffmpeg 7.1
+    name: build / macos / ffmpeg 8.0
     runs-on: macos-latest
 
     steps:
@@ -45,7 +46,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install ffmpeg@7 pkg-config
+          brew install ffmpeg@8 pkg-config
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -53,16 +54,16 @@ jobs:
       - name: Build
         run: cargo build
         env:
-          LDFLAGS: "-L/opt/homebrew/opt/ffmpeg@7/lib"
-          CPPFLAGS: "-I/opt/homebrew/opt/ffmpeg@7/include"
-          PKG_CONFIG_PATH: "/opt/homebrew/opt/ffmpeg@7/lib/pkgconfig"
+          LDFLAGS: "-L/opt/homebrew/opt/ffmpeg@8/lib"
+          CPPFLAGS: "-I/opt/homebrew/opt/ffmpeg@8/include"
+          PKG_CONFIG_PATH: "/opt/homebrew/opt/ffmpeg@8/lib/pkgconfig"
 
   build-windows:
-    name: build / windows / ffmpeg 7.1
+    name: build / windows / ffmpeg 8.0
     runs-on: windows-latest
 
     env:
-      FFMPEG_DOWNLOAD_URL: https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-7.1.1-full_build-shared.7z
+      FFMPEG_DOWNLOAD_URL: https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-full_build-shared.7z
 
     steps:
       - name: Checkout
@@ -72,8 +73,8 @@ jobs:
         run: |
           $VCINSTALLDIR = $(& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath)
           Add-Content $env:GITHUB_ENV "LIBCLANG_PATH=${VCINSTALLDIR}\VC\Tools\LLVM\x64\bin"
-          Invoke-WebRequest "${env:FFMPEG_DOWNLOAD_URL}" -OutFile ffmpeg-7.1.1-full_build-shared.7z
-          7z x ffmpeg-7.1.1-full_build-shared.7z
+          Invoke-WebRequest "${env:FFMPEG_DOWNLOAD_URL}" -OutFile ffmpeg-8.0.0-full_build-shared.7z
+          7z x ffmpeg-8.0.0-full_build-shared.7z
           mkdir ffmpeg
           mv ffmpeg-*/* ffmpeg/
           Add-Content $env:GITHUB_ENV "FFMPEG_DIR=${pwd}\ffmpeg"
@@ -87,7 +88,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    container: jrottenberg/ffmpeg:7.1-ubuntu
+    container: jrottenberg/ffmpeg:8.0-ubuntu
 
     steps:
       - name: Checkout
@@ -114,7 +115,7 @@ jobs:
 
   lints:
     runs-on: ubuntu-latest
-    container: jrottenberg/ffmpeg:7.1-ubuntu
+    container: jrottenberg/ffmpeg:8.0-ubuntu
 
     steps:
       - name: Checkout
