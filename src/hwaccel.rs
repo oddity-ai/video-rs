@@ -93,7 +93,7 @@ impl HardwareAccelerationDeviceType {
             // FIXME: Find a way to handle the new variants in ffmpeg 7 without breaking backwards
             // compatibility...
             #[allow(unreachable_patterns)]
-            _ => unimplemented!(),
+            _ => None
         }
     }
 }
