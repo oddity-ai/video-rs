@@ -527,7 +527,8 @@ pub(crate) mod private {
         type Out = ();
 
         fn write_header(&mut self) -> Result<()> {
-            Ok(self.output.write_header()?)
+            self.output.write_header()?;
+            Ok(())
         }
 
         fn write(&mut self, packet: &mut AvPacket) -> Result<()> {
